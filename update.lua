@@ -1,4 +1,4 @@
-args = {...}
+args = { ... }
 if args == nil then
     arglen = 0
 else
@@ -12,20 +12,18 @@ CLIENT_MODEM_SIDE = "left"
 DONE_STR = "##done##"
 UPDATE_STR = "update"
 
-
 function sendFiles(sender_id)
     local files = fs.list(DISK_DIRECTORY_NAME)
     os.sleep(1)
-    for i=1,table.getn(files),1 do
+    for i = 1, table.getn(files), 1 do
         rednet.send(sender_id, files[i])
         local filepointer = fs.open(DISK_DIRECTORY_NAME .. "/" .. files[i], "r")
-        local filedata =  filepointer.readAll()
+        local filedata = filepointer.readAll()
         rednet.send(sender_id, filedata)
         filepointer.close()
     end
     rednet.send(sender_id, DONE_STR)
 end
-
 
 function waitUpdate()
     rednet.open(SERVER_MODEM_SIDE)
