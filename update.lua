@@ -6,9 +6,11 @@ else
 end
 
 SERVER_ID = 3
-SERVER_MODEM_SIDE = "top"
+
+if peripheral.find("modem") == nil then
+    error("No modem found! Cannot update!")
+end
 DISK_DIRECTORY_NAME = "disk"
-CLIENT_MODEM_SIDE = "left"
 DONE_STR = "##done##"
 UPDATE_STR = "update"
 
@@ -26,7 +28,7 @@ function sendFiles(sender_id)
 end
 
 function waitUpdate()
-    rednet.open(SERVER_MODEM_SIDE)
+    peripheral.find("modem", rednet.open)
     while true do
         print("Waiting for update request")
         local sender_id, data, protocol = rednet.receive()
@@ -41,12 +43,12 @@ function waitUpdate()
 end
 
 function updateClient()
-    rednet.open(CLIENT_MODEM_SIDE)
+    peripheral.find("modem", rednet.open)
     rednet.send(SERVER_ID, UPDATE_STR)
     while true do
         local id, fnname, proto = rednet.receive()
         if fnname == DONE_STR then
-            rednet.close(CLIENT_MODEM_SIDE)
+            rednet.close()
             print("Update complete")
             return
         end
@@ -65,12 +67,11 @@ function updateClient()
 end
 
 -- Main
-
 if arglen == 1 and args[1] == "--server" then
-    print("Starting Server..")
+    print("Starting Update Server..")
     waitUpdate()
 elseif arglen == 0 then
-    print("Starting Client..")
+    print("Starting Update Client..")
     updateClient()
 else
     error("Invalid args, usage: 'update --server' or 'update'")

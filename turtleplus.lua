@@ -1,172 +1,8 @@
 INVENTORY_SIZE = 16
 DEBUG_TURTLE = true
 
--- General Lua Utility Funcs
-function debugM(msg)
-    if DEBUG_TURTLE then
-        print(msg)
-    end
-end
-
-function errorTrace(message)
-    for i = 2, 4, 1 do
-        local info = debug.getinfo(i)
-        local info_name = tostring(info.name)
-        if info == nil or info_name == nil or info_name == "pcall" or info_name == "nil" then
-            break
-        else
-            print("at " .. info_name .. ": " .. tostring(info.linedefined))
-        end
-    end
-
-    error(message)
-end
-
-function wrapFuncInWaitAndRetryFunc(func, sleep_time, check_func, message)
-    local function wrappedFunc(...)
-        waitAndRetryFunc(func, sleep_time, check_func, message, unpack(arg))
-    end
-    return wrappedFunc
-end
-
-function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
-    -- ... is arg for func
-    while true do
-        local func_arglen = table.getn(arg)
-        local val = nil
-        if func_arglen > 0 then
-            debugM("calling func with args '" .. strlist(arg) .. "'")
-            val = { func(unpack(arg)) }
-        else
-            val = { func() }
-        end
-        debugM("Func returned " .. strlist(val))
-        if check_func(unpack(val)) then
-            return
-        else
-            print(message)
-            os.sleep(sleep_time)
-        end
-    end
-end
-
-function waitAndRetry(func, sleep_time, message, ...)
-    local function defaultCheckFunc(v)
-        if v or sleep_time == 0 then
-            return true
-        else
-            return false
-        end
-    end
-    waitAndRetryFunc(func, sleep_time, defaultCheckFunc, message, unpack(arg))
-end
-
-function strlist(l)
-    local s = ""
-    for i = 1, table.getn(l), 1 do
-        s = s .. "," .. tostring(l[i])
-    end
-    return s
-end
--- MoveDirection
-MoveDirection = {
-    NORTH = "north",
-    SOUTH = "south",
-    EAST = "east",
-    WEST = "west",
-    UP = "up",
-    DOWN = "down"
-}
-
-function validateMoveDirection(dir)
-    if dir == MoveDirection.NORTH or dir == MoveDirection.SOUTH or dir == MoveDirection.EAST or dir == MoveDirection.WEST or dir == MoveDirection.UP or dir == MoveDirection.DOWN then
-        return
-    else
-        if dir == nil then
-            dir = "nil"
-        end
-        errorTrace("Invalid MoveDirection '" .. dir .. "'")
-    end
-end
-
-function MoveDirection:opposite(dir)
-    validateMoveDirection(dir)
-    local reverse = {
-        north = "south",
-        south = "north",
-        east = "west",
-        west = "east",
-        up = "down",
-        down = "up"
-    }
-    return reverse[dir]
-end
-
--- RelativeTurnDirection
-RelativeTurnDirection = {
-    LEFT = "left",
-    RIGHT = "right"
-}
-
-function validateRelativeTurnDirection(dir)
-    if dir == RelativeTurnDirection.LEFT or dir == RelativeTurnDirection.RIGHT then
-        return
-    else
-        if dir == nil then
-            dir = "nil"
-        end
-        errorTrace("Invalid RelativeTurnDirection '" .. dir .. "'")
-    end
-end
-
-function RelativeTurnDirection:opposite(dir)
-    validateRelativeTurnDirection(dir)
-    if dir == RelativeTurnDirection.LEFT then
-        return RelativeTurnDirection.RIGHT
-    else
-        return RelativeTurnDirection.LEFT
-    end
-end
-
--- TurnDirection
-TurnDirection = {
-    NORTH = "north",
-    SOUTH = "south",
-    EAST = "east",
-    WEST = "west"
-}
-
-function validateTurnDirection(dir)
-    if dir == TurnDirection.NORTH or dir == TurnDirection.SOUTH or dir == TurnDirection.EAST or dir == TurnDirection.WEST then
-        return
-    else
-        if dir == nil then
-            dir = "nil"
-        end
-        errorTrace("Invalid TurnDirection '" .. dir .. "'")
-    end
-end
-
-function TurnDirection:opposite(dir)
-    validateTurnDirection(dir)
-    local reverse = {
-        north = "south",
-        south = "north",
-        east = "west",
-        west = "east"
-    }
-    return reverse[dir]
-end
-
-function TurnDirection:fromMoveDirection(dir)
-    validateMoveDirection(dir)
-    local map = {
-        up = "none",
-        down = "none",
-        left = "left",
-        right = "right"
-    }
-end
+require("ccutil")
+require("movement")
 
 -- TurtlePlus
 TurtlePlus = {
@@ -211,7 +47,7 @@ function TurtlePlus_backgroundCoroutine(turtle_plus)
             if event == "char" then
                 local val = key_mapping_to_func[data]
                 if val ~= nil then
-                    print("Got a key signal..")
+                    print("Got a valid key signal..")
                     done = false or val(turtle_plus)
                 end
             end
@@ -220,9 +56,9 @@ function TurtlePlus_backgroundCoroutine(turtle_plus)
 
     local function bgTest()
         while not done do
-            print("background test")
+            --print("background test")
             --print("from bg thread" .. turtle_plus:getCurrentPositionStr())
-            os.sleep(2)
+            os.sleep(1)
             if not turtle_plus.keep_running then
                 print("Ending co-routine")
                 done = true
@@ -325,14 +161,14 @@ function TurtlePlus:turn(turn_dir, ignore_command_flag)
     if cur_dir == turn_dir then
         return
     else
-        debug("Turning " .. turn_dir)
+        debugM("Turning " .. turn_dir)
         local turns = turn_mapping[cur_dir][turn_dir]
         for i = 1, table.getn(turns), 1 do
             if turns[i] == "left" then
-                debug("left")
+                debugM("left")
                 turtle.turnLeft()
             else
-                debug("right")
+                debugM("right")
                 turtle.turnRight()
             end
         end
@@ -357,18 +193,20 @@ function TurtlePlus:doDirectionalFunc(dir, amount, func_up, func_down, func, do_
             self:turn(dir)
         end
     end
-
+    local resp = nil
     if dir == MoveDirection.UP then
-        func_up(amount)
+        resp = func_up(amount)
     elseif dir == MoveDirection.DOWN then
-        func_down(amount)
+        resp = func_down(amount)
     else
-        func(amount)
+        resp = func(amount)
     end
 
     if do_correct then
         self:turn(previous_direction)
     end
+
+    return unpack(resp)
 end
 
 function wrapDropFunc(dropFunc)
@@ -393,8 +231,25 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     -- retry_sec how long to wait between tries (if < 0 will not retry)
 
     -- if amount == -1 drop all
+    if dir == nil then
+        dir = MoveDirection.NORTH
+    end
+
+    if do_correct == nil then
+        do_correct = false
+    end
+
+    if do_turn == nil then
+        do_turn = true
+    end
+
+    if retry_sec == nil then
+        retry_sec = 0
+    end
+
+
     local dropped_count = 0
-    if amount == -1 then
+    if amount == -1 or amount == nil then
         local item = turtle.getItemDetail()
         if item == nil then
             return
@@ -402,7 +257,7 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
         amount = item.count
     end
 
-    function dropCheckFunc(item_count, ...)
+    local function dropCheckFunc(item_count, ...)
         debugM("Checking " .. tostring(item_count) .. " - " .. strlist(arg))
         if item_count == false then
             return false
@@ -427,12 +282,13 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     local f = wrapFuncInWaitAndRetryFunc(wrapDropFunc(turtle.drop), retry_sec, dropCheckFunc, "Drop() failed, nothing dropped, retrying in " .. tostring(retry_sec))
     local down = wrapFuncInWaitAndRetryFunc(wrapDropFunc(turtle.dropDown), retry_sec, dropCheckFunc, "DropDown() failed, nothing dropped, retrying in " .. tostring(retry_sec))
 
-    self:doDirectionalFunc(dir, amount, up, down, f, do_correct, do_turn, retry_sec)
+    return self:doDirectionalFunc(dir, amount, up, down, f, do_correct, do_turn, retry_sec)
 end
 
 function wrapSuckFunc(suckFunc)
     function newSuckFunc(amount)
-        error("TODO") -- TODO if you suck() while current slot is full, will put in empty slot, leading to incorrect
+        print("Suck " .. amount)
+        --error("TODO") -- TODO if you suck() while current slot is full, will put in empty slot, leading to incorrect
         -- count of number of things sucked up
         local beforeAmt = turtle.getItemCount(turtle.getSelectedSlot())
         local result, reason = suckFunc(amount)
@@ -452,14 +308,38 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec)
     -- do_turn -  turn back to the original direction
     -- retry_sec how long to wait between tries (if < 0 will not retry)
 
-    -- if amount == -1 suck all
+    -- if amount == -1 or nil suck all
+    if dir == nil then
+        dir = MoveDirection.NORTH
+    end
+
+    if do_correct == nil then
+        do_correct = false
+    end
+
+    if do_turn == nil then
+        do_turn = true
+    end
+
+    if retry_sec == nil then
+        retry_sec = 0
+    end
+
     local suck_all = false
-    if amount == -1 then
+    if amount == -1 or amount == nil then
         suck_all = true
         amount = 64
     end
 
-    function suckCheckFunc(item_count, ...)
+    local function suckCheckFunc(item_count, message)
+        if retry_sec == 0 then
+            return true
+        end
+
+        if item_count == false then
+            return false
+        end
+
         if retry_sec == 0 then
             return true
         end
@@ -474,11 +354,11 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec)
         end
     end
 
-    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suckUp), retry_sec, dropCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suck), retry_sec, dropCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suckDown), retry_sec, dropCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suckUp), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suck), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(turtle.suckDown), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
 
-    self:doDirectionalFunc(dir, amount, up, f, down, do_correct, do_turn, retry_sec)
+    return self:doDirectionalFunc(dir, amount, up, down, f, do_correct, do_turn, retry_sec)
 end
 
 function TurtlePlus:dropEntireInventory(dir, retry_sec)
@@ -717,42 +597,3 @@ function runTurtlePlus(turtle_plus, main_func)
     )
     debugM("All routines finished, stopping")
 end
-
-function main(t)
-    -- Turn directionality test
-    --local dirs = {"north","east","south","west"}
-    --for i=1,4,1 do
-    --    t:turn(dirs[i])
-    --    for j=1,4,1 do
-    --        print("moving " .. dirs[j])
-    --        t:move(dirs[j], false)
-    --    end
-    --end
-    --t:turn(RelativeTurnDirection.NORTH)
-
-    --t:goTo(2, 0, 0)
-    --while true do
-    --    t:turnRelative(RelativeTurnDirection.LEFT)
-    --end
-
-    -- drop test
-    --t:drop("north", 1, false, false, 5)
-    --t:drop("north", 1, false, false)
-
-    -- dropEntireInventory test
-    --t:dropOffInventoryAtHome()
-
-    -- suck test TODO
-    --suck(dir, amount, do_correct, do_turn, retry_sec)
-
-    -- Refuel TODO
-    -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
-
-    debugM("main done")
-    t:finish()
-end
-
-runTurtlePlus(nil, main)
-
-
-
