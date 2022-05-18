@@ -747,7 +747,7 @@ function main(t)
 
     -- Refuel TODO
     -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
-    
+
     debugM("main done")
     t:finish()
 end
