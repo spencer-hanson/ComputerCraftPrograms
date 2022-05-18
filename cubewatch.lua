@@ -16,42 +16,6 @@ HOME_PLACE_LOCATION = "west"
 
 
 
-function returnToHome()
-    reverseTurn()
-
-    for i = 0, CURRENT_DOWN_MOVEMENT - 1, 1 do
-        turtle.up()
-    end
-
-    turtle.turnLeft()
-    for i = 0, CURRENT_RIGHT_MOVEMENT - 1, 1 do
-        turtle.forward()
-    end
-    turtle.turnRight()
-
-    for i = 0, CURRENT_FORWARD_MOVEMENT - 1, 1 do
-        turtle.back()
-    end
-end
-
-function returnToWork()
-    for i = 0, CURRENT_FORWARD_MOVEMENT - 1, 1 do
-        turtle.forward()
-    end
-
-    turtle.turnRight()
-    for i = 0, CURRENT_RIGHT_MOVEMENT - 1, 1 do
-        turtle.forward()
-    end
-    turtle.turnLeft()
-
-    for i = 0, CURRENT_DOWN_MOVEMENT - 1, 1 do
-        turtle.down()
-    end
-
-    turnT(CURRENT_FACING_DIRECTION, true)
-end
-
 function dropOffInventoryAtHome()
     print("Dropping off stuff")
     print("Current position (forward, right, down) " .. getCurrentPositionStr())
