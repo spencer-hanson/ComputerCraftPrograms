@@ -28,9 +28,12 @@ function main(t)
     --suck(dir, amount, do_correct, do_turn, retry_sec)
 
     -- Refuel TODO
-    -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
 
+    -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
+    t:moveN(t.current_direction, nil, nil, nil, 10)
+    t:goHome()
     debugM("main done")
+    print("Fuel level left " .. turtle.getFuelLevel())
     t:finish()
 end
 

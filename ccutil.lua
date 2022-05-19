@@ -4,6 +4,10 @@ function debugM(msg)
     end
 end
 
+function unpackM(table1)
+    return unpack(table1, 1, table.maxn(table1))
+end
+
 function errorTrace(message)
     for i = 1, 4, 1 do
         local info = debug.getinfo(i)
@@ -24,11 +28,11 @@ end
 
 function wrapFuncInWaitAndRetryFunc(func, sleep_time, check_func, message)
     if check_func == nil then
-        errorTrace("asdf")
+        errorTrace("Check function passed into wrapFuncInWaitAndRetryFunc is nil")
     end
 
     local function wrappedFunc(...)
-        return waitAndRetryFunc(func, sleep_time, check_func, message, unpack(arg))
+        return waitAndRetryFunc(func, sleep_time, check_func, message, unpackM(arg))
     end
     return wrappedFunc
 end
@@ -40,15 +44,14 @@ function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
         local val = nil
 
         if func_arglen > 0 then
-            debugM("calling func with args '" .. strlist(arg) .. "'")
-            val = { func(unpack(arg)) }
+            val = { func(unpackM(arg)) }
         else
             val = { func() }
         end
 
-        debugM("Func returned " .. strlist(val))
-        local check_func_result = check_func(unpack(val))
-        debugM("Check func result " .. tostring(check_func_result))
+        --debugM("Func returned " .. strlist(val))
+        local check_func_result = check_func(unpackM(val))
+        --debugM("Check func result " .. tostring(check_func_result))
 
         if check_func_result then
             return val
@@ -67,7 +70,7 @@ function waitAndRetry(func, sleep_time, message, ...)
             return false
         end
     end
-    return waitAndRetryFunc(func, sleep_time, defaultCheckFunc, message, unpack(arg))
+    return waitAndRetryFunc(func, sleep_time, defaultCheckFunc, message, unpackM(arg))
 end
 
 function strlist(l)
