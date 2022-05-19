@@ -34,6 +34,22 @@ function MoveDirection:opposite(dir)
     return reverse[dir]
 end
 
+function MoveDirection:left(dir)
+    local left = {
+        north = "west",
+        south = "east",
+        east = "north",
+        west = "south",
+        up = "up",
+        down = "down"
+    }
+    return left[dir]
+end
+
+function MoveDirection:right(dir)
+    return MoveDirection.opposite(MoveDirection:left(dir))
+end
+
 -- RelativeTurnDirection
 RelativeTurnDirection = {
     LEFT = "left",
