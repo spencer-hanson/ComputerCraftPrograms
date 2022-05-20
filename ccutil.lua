@@ -8,6 +8,13 @@ function unpackM(table1)
     return unpack(table1, 1, table.maxn(table1))
 end
 
+function defaultNil(val, def)
+    if val == nil then
+        return def
+    else
+        return val
+    end
+end
 function errorTrace(message)
     for i = 1, 4, 1 do
         local info = debug.getinfo(i)
