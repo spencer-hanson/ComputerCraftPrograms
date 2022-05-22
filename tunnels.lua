@@ -1,7 +1,22 @@
-require("turtleplus")
-OUTPUT_CHEST = "SOUTH"
-FUEL_CHEST = "NORTH"
+require("./libs/turtleplus")
+require("./libs/movement")
+OUTPUT_CHEST = MoveDirection.SOUTH
+FUEL_CHEST = MoveDirection.UP
 TUNNEL_LENGTH = 32
+NUM_ROWS = 32
+FIRST_TURN = RelativeTurnDirection.RIGHT
+
+function turnAround(t)
+    t:turnRelative(FIRST_TURN)
+    digTwo(t)
+    t:forward()
+    digTwo(t)
+    t:forward()
+    digTwo(t)
+    t:forward()
+    t:turnRelative(FIRST_TURN)
+    FIRST_TURN = RelativeTurnDirection:opposite(FIRST_TURN)
+end
 
 function digTwo(t)
     t:dig()
@@ -10,24 +25,20 @@ end
 
 function forward(t)
     for i=1,TUNNEL_LENGTH,1 do
-        digTwo()
+        digTwo(t)
         t:forward()
     end
 end
 
 function main(t)
-     forward(t)
-    t:turnRight()
-    digTwo(t)
-    t:forward()
-    digTwo(t)
-    t:forward()
-    digTwo(t)
-    t:forward()
-    t:turnRight()
-    forward(t)
+    for i=1,NUM_ROWS,1 do
+        forward(t)
+        turnAround(t)
+    end
+    t:goHome(true)
     t:finish()
 end
+
 turtle_plus = TurtlePlus:new()
 turtle_plus.home_drop_direction = OUTPUT_CHEST
 turtle_plus.home_fuel_direction = FUEL_CHEST

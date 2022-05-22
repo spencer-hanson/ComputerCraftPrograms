@@ -1,4 +1,4 @@
-require("turtleplus")
+require("./libs/turtleplus")
 
 function main(t)
     -- Turn directionality test
@@ -27,14 +27,15 @@ function main(t)
     -- suck test TODO
     --suck(dir, amount, do_correct, do_turn, retry_sec)
 
-    -- Refuel TODO
+    -- Refuel test
+    --t:moveN(t.current_direction, nil, nil, nil, 10)
+    --t:goHome()
+    --debugM("main done")
+    --print("Fuel level left " .. turtle.getFuelLevel())
+    --t:finish()
 
     -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
-    t:moveN(t.current_direction, nil, nil, nil, 10)
-    t:goHome()
-    debugM("main done")
-    print("Fuel level left " .. turtle.getFuelLevel())
-    t:finish()
+
 end
 
 runTurtlePlus(nil, main)

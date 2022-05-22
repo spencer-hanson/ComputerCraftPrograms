@@ -1,4 +1,4 @@
-require("turtleplus")
+require("./libs/turtleplus")
 INPUT_CHEST = "up"
 OUTPUT_CHEST = "south"
 

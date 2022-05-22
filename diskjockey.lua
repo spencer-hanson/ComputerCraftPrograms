@@ -1,5 +1,5 @@
-require("movement")
-require("turtleplus")
+require("libs/movement")
+require("libs/turtleplus")
 
 CHEST_1_LOCATION = MoveDirection.NORTH
 CHEST_2_LOCATION = MoveDirection.SOUTH

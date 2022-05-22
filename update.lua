@@ -14,15 +14,38 @@ DISK_DIRECTORY_NAME = "disk"
 DONE_STR = "##done##"
 UPDATE_STR = "update"
 
+function sendFile(sender_id, remote_path, local_path)
+    rednet.send(sender_id, remote_path)
+    local filepointer = fs.open(local_path, "r")
+    local filedata = filepointer.readAll()
+    rednet.send(sender_id, filedata)
+    filepointer.close()
+end
+
+function sendData(sender_id, remote_path, local_path)
+    local attrs = fs.attributes(local_path)
+    if attrs.isDir == false then
+        sendFile(sender_id, remote_path, local_path)
+    else
+        local files = fs.list(local_path)
+        for i = 1, table.getn(files), 1 do
+            local local_file_path = local_path .. "/" .. files[i]
+            local remote_file_path = remote_path .. "/" .. files[i]
+
+            if attrs.isDir then
+                sendData(sender_id, remote_file_path, local_file_path)
+            else
+                sendFile(sender_id, remote_file_path, local_file_path)
+            end
+        end
+    end
+end
+
 function sendFiles(sender_id)
     local files = fs.list(DISK_DIRECTORY_NAME)
     os.sleep(1)
     for i = 1, table.getn(files), 1 do
-        rednet.send(sender_id, files[i])
-        local filepointer = fs.open(DISK_DIRECTORY_NAME .. "/" .. files[i], "r")
-        local filedata = filepointer.readAll()
-        rednet.send(sender_id, filedata)
-        filepointer.close()
+        sendData(sender_id, files[i], DISK_DIRECTORY_NAME .. "/" .. files[i])
     end
     rednet.send(sender_id, DONE_STR)
 end

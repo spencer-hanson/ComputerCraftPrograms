@@ -1,7 +1,7 @@
-require("turtleplus")
+require("libs/turtleplus")
 DROP_COUNT = 11 -- how many to drop each iteration
 CRAFT_SLEEP = 500 -- how long to sleep before crafting again
-CRAFT_MATERIAL_NAME = "modern_industrialization:coke"
+CRAFT_MATERIAL_NAMES = {"modern_industrialization:coke", "minecraft:coal"}
 EXCESS_CHEST_DIRECTION = MoveDirection.WEST
 
 
@@ -29,8 +29,10 @@ function dropExcessMaterials(t)
         turtle.select(i)
         local details = turtle.getItemDetail(i)
         if details ~= nil then
-            if details.name == CRAFT_MATERIAL_NAME then
-                t:drop(EXCESS_CHEST_DIRECTION, -1, false, false, 3)
+            for idx=1,table.getn(CRAFT_MATERIAL_NAMES),1 do
+                if details.name == CRAFT_MATERIAL_NAMES[idx] then
+                    t:drop(EXCESS_CHEST_DIRECTION, -1, false, false, 3)
+                end
             end
         end
     end

@@ -1,4 +1,4 @@
-require("ccutil")
+require("./libs/ccutil")
 
 -- MoveDirection
 MoveDirection = {
