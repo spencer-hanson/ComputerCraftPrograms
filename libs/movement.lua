@@ -47,7 +47,7 @@ function MoveDirection:left(dir)
 end
 
 function MoveDirection:right(dir)
-    return MoveDirection.opposite(MoveDirection:left(dir))
+    return MoveDirection:opposite(MoveDirection:left(dir))
 end
 
 -- RelativeTurnDirection

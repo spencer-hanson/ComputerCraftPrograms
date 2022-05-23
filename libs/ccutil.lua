@@ -49,7 +49,6 @@ function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
     while true do
         local func_arglen = table.getn(arg)
         local val = nil
-
         if func_arglen > 0 then
             val = { func(unpackM(arg)) }
         else
@@ -57,6 +56,7 @@ function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
         end
 
         --debugM("Func returned " .. strlist(val))
+
         local check_func_result = check_func(unpackM(val))
         --debugM("Check func result " .. tostring(check_func_result))
 
@@ -70,7 +70,7 @@ function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
 end
 
 function waitAndRetry(func, sleep_time, message, ...)
-    local function defaultCheckFunc(v)
+    local function defaultCheckFunc(v, ...)
         if v or sleep_time == 0 then
             return true
         else

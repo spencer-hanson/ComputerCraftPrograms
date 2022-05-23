@@ -4,14 +4,14 @@ require("./libs/movement")
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 BLOCKS_CHEST = MoveDirection.WEST
-CUBE_FORWARD = 11
-CUBE_RIGHT = 11
-CUBE_DOWN = 5
+CUBE_FORWARD = 2
+CUBE_RIGHT = 2
+CUBE_DOWN = 2
 
 TURN_DIRECTION = RelativeTurnDirection.RIGHT
 
 function line(t, func, length)
-    for i = 1, length, 1 do
+    for i = 1, length-1, 1 do
         func()
         t:forward()
     end
@@ -33,19 +33,35 @@ function plane(t, func, width, length)
     end
 end
 
-function cube(t, func, height, width, length)
+function cube(t, func, height, width, length, go_down)
     for i=1,height,1 do
         plane(t, func, width, length)
-        t:up()
+        func()
+        if go_down then
+            t:down()
+        else
+            t:up()
+        end
+
+        t:turn(MoveDirection:opposite(t.current_direction))
     end
 end
 
 function main(t)
-    function func()
+    function dig()
         turtle.digDown()
     end
-    cube(t, func, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD)
 
+    function place()
+        turtle.placeDown()
+    end
+
+    cube(t, dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true)
+    t:up() -- need because we're placing underneath
+    cube(t, place, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, false)
+    print("Finished, going home")
+    t:goHome()
+    t:finish()
 end
 
 runTurtlePlus(nil, main)

@@ -35,7 +35,22 @@ function main(t)
     --t:finish()
 
     -- TODO 'd' key to drop everything offset -> getWaitingFunc() for all hotkeys and descriptions
+    --t:up()
+    -- test directions while digging
+    --t:down(true)
+    --t:back(true)
+    --t:left(true)
+    --t:forward(true)
+    --t:forward(true)
+    --t:right(true)
+    --t:goHome(true)
 
+    --t:goTo(8, 8, 8, nil, true)
+    t.current_forward = 8
+    t.current_right = 8
+    t.current_down = 8
+    t:goHome(true)
+    t:finish()
 end
 
 runTurtlePlus(nil, main)

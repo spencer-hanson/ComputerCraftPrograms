@@ -377,13 +377,13 @@ end
 function TurtlePlus:suckLeft(amount, do_correct, do_turn, retry_sec)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
-    return self:suck(MoveDirection.left(self.current_direction), amount, do_correct, do_turn, retry_sec)
+    return self:suck(MoveDirection:left(self.current_direction), amount, do_correct, do_turn, retry_sec)
 end
 
 function TurtlePlus:suckRight(amount, do_correct, do_turn, retry_sec)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
-    return self:suck(MoveDirection.right(self.current_direction), amount, do_correct, do_turn, retry_sec)
+    return self:suck(MoveDirection:right(self.current_direction), amount, do_correct, do_turn, retry_sec)
 end
 
 function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_command_flag)
@@ -443,20 +443,20 @@ end
 function TurtlePlus:digLeft(tool_side, do_correct, do_turn, retry_sec)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
-    return self:dig(MoveDirection.left(self.current_direction), tool_side, do_correct, do_turn, retry_sec)
+    return self:dig(MoveDirection:left(self.current_direction), tool_side, do_correct, do_turn, retry_sec)
 end
 
 function TurtlePlus:digRight(tool_side, do_correct, do_turn, retry_sec)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
-    return self:dig(MoveDirection.right(self.current_direction), tool_side, do_correct, do_turn, retry_sec)
+    return self:dig(MoveDirection:right(self.current_direction), tool_side, do_correct, do_turn, retry_sec)
 end
 
-function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec)
+function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec, ignore_command_flag)
     dir = defaultNil(dir, self.current_direction)
 
     validateMoveDirection(dir)
-    turtlePlusCheckListenToCommands(self)
+    turtlePlusCheckListenToCommands(self, ignore_command_flag)
 
     dir = defaultNil(dir, MoveDirection.NORTH)
     do_correct = defaultNil(do_correct, true)
@@ -476,12 +476,12 @@ function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec)
 end
 
 -- Move() funcs
-function TurtlePlus:forward()
-    return self:move(self.current_direction, false, nil)
+function TurtlePlus:forward(do_dig)
+    return self:move(self.current_direction, false, nil, nil, do_dig)
 end
 
-function TurtlePlus:back()
-    return self:move(MoveDirection.opposite(self.current_direction), false, nil)
+function TurtlePlus:back(do_dig)
+    return self:move(MoveDirection:opposite(self.current_direction), false, nil, nil, do_dig)
 end
 
 function TurtlePlus:up(do_dig)
@@ -494,17 +494,24 @@ end
 
 function TurtlePlus:right(do_dig, do_correct)
     do_correct = defaultNil(do_correct, true)
-    return self:move(MoveDirection.right(self.current_direction), do_correct, nil, nil, do_dig)
+    return self:move(MoveDirection:right(self.current_direction), do_correct, nil, nil, do_dig)
 end
 
 function TurtlePlus:left(do_dig, do_correct)
     do_correct = defaultNil(do_correct, true)
-    return self:move(MoveDirection.left(self.current_direction), do_correct, nil, nil, do_dig)
+    return self:move(MoveDirection:left(self.current_direction), do_correct, nil, nil, do_dig)
 end
 function TurtlePlus:moveN(dir, do_correct, retry_sec, ignore_command_flag, num_moves, do_dig)
     --print("Calling moveN with " .. tostring(dir) .. ", " .. tostring(dir) .. ", " .. tostring(retry_sec) .. ", " .. tostring(ignore_command_flag) .. ", " .. tostring(num_moves))
 
     num_moves = defaultNil(num_moves, 1)
+    if num_moves < 0 then
+        num_moves = num_moves * -1
+        dir = MoveDirection:opposite(dir)
+        if do_dig then
+            self:turn(dir, ignore_command_flag)
+        end
+    end
     ignore_command_flag = defaultNil(ignore_command_flag, false)
     for i = 1, num_moves, 1 do
         self:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig)
@@ -520,7 +527,6 @@ function wrapMoveFunc(turtle_plus, move_func)
 end
 
 function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig)
-    --print("Calling move with " .. tostring(dir) .. ", " .. tostring(dir) .. ", " .. tostring(retry_sec) .. ", " .. tostring(ignore_command_flag))
     do_dig = defaultNil(do_dig, false)
     self:checkFuel()
     ignore_command_flag = defaultNil(ignore_command_flag, false)
@@ -531,10 +537,17 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
     retry_sec = defaultNil(retry_sec, 5)
 
     if dir == MoveDirection.UP then
+        if do_dig then
+            self:dig(MoveDirection.UP, nil, nil, nil, 0, ignore_command_flag)
+        end
+
         waitAndRetry(wrapMoveFunc(self, turtle.up), 5, "Moving up failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         self.current_down = self.current_down - 1
         return
     elseif dir == MoveDirection.DOWN then
+        if do_dig then
+            self:dig(MoveDirection.DOWN, nil, nil, nil, 0, ignore_command_flag)
+        end
         waitAndRetry(wrapMoveFunc(self, turtle.down), 5, "Moving down failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         self.current_down = self.current_down + 1
         return
@@ -588,14 +601,14 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
     --debugM(self.current_direction .. " -" .. shifted_idx .. "> " .. tostring(new_direction))
     --debugM("Dir " .. dir .. " newdir " .. new_direction)
 
-    --local movement_success = false
-
 
     if new_direction == MoveDirection.WEST then
         turtle.turnLeft()
+        if do_dig then
+            self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
+        end
         waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         if do_correct then
-            print("fixing west")
             turtle.turnRight()
         else
             self.current_direction = dir
@@ -603,16 +616,26 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
 
     elseif new_direction == MoveDirection.EAST then
         turtle.turnRight()
+        if do_dig then
+            self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
+        end
+
         waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving east failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         if do_correct then
-            print("fixing east")
             turtle.turnLeft()
         else
             self.current_direction = dir
         end
     elseif new_direction == MoveDirection.NORTH then
+        if do_dig then
+            self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
+        end
         waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving north failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     elseif new_direction == MoveDirection.SOUTH then
+        if do_dig then
+            self:dig(MoveDirection:opposite(self.current_direction), nil, true, true, 1, ignore_command_flag)
+        end
+
         waitAndRetry(wrapMoveFunc(self, turtle.back), retry_sec, "Moving south failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     end
 
@@ -644,13 +667,14 @@ function TurtlePlus:goHome(do_dig, ignore_command_flag)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
 
     self:turn(MoveDirection.NORTH, ignore_command_flag)
-    self:moveN(MoveDirection.UP, false, nil, ignore_command_flag, self.current_down)
+    print("current down " .. tostring(self.current_down))
+    self:moveN(MoveDirection.UP, false, nil, ignore_command_flag, self.current_down, do_dig)
 
     self:turnRelative(RelativeTurnDirection.LEFT, ignore_command_flag)
-    self:moveN(self.current_direction, false, nil, ignore_command_flag, self.current_right)
+    self:moveN(self.current_direction, false, nil, ignore_command_flag, self.current_right, do_dig)
 
     self:turnRelative(RelativeTurnDirection.RIGHT, ignore_command_flag)
-    self:moveN(MoveDirection.SOUTH, false, nil, ignore_command_flag, self.current_forward)
+    self:moveN(MoveDirection.SOUTH, false, nil, ignore_command_flag, self.current_forward, do_dig)
 
     self.current_forward = 0
     self.current_right = 0
@@ -662,9 +686,9 @@ function TurtlePlus:goTo(forward, right, down, do_correct, do_dig, ignore_comman
     ignore_command_flag = defaultNil(ignore_command_flag, false)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
     local old_dir = self.current_direction
-    self:moveN(MoveDirection.NORTH, false, nil, ignore_command_flag, forward)
-    self:moveN(MoveDirection.EAST, false, nil, ignore_command_flag, right)
-    self:moveN(MoveDirection.DOWN, false, nil, ignore_command_flag, down)
+    self:moveN(MoveDirection.NORTH, false, nil, ignore_command_flag, forward, do_dig)
+    self:moveN(MoveDirection.EAST, false, nil, ignore_command_flag, right, do_dig)
+    self:moveN(MoveDirection.DOWN, false, nil, ignore_command_flag, down, do_dig)
 
     if do_correct then
         self:turn(old_dir, ignore_command_flag)
