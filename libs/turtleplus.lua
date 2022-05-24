@@ -9,7 +9,6 @@ TurtlePlus = {
     home_drop_direction = MoveDirection.SOUTH,
     home_fuel_direction = MoveDirection.UP,
     home_refill_direction = MoveDirection.WEST,
-    is_home = true,
     current_direction = TurnDirection.NORTH,
     current_forward = 0,
     current_right = 0,
@@ -26,7 +25,6 @@ function TurtlePlus:new(o)
     o.home_drop_direction = MoveDirection.SOUTH
     o.home_fuel_direction = MoveDirection.UP
     o.home_refill_direction = MoveDirection.WEST
-    o.is_home = true
     o.current_direction = TurnDirection.NORTH
     o.current_forward = 0
     o.current_right = 0
@@ -145,6 +143,7 @@ end
 function TurtlePlus:turnRelative(turn_rel_dir, ignore_command_flag)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
     validateRelativeTurnDirection(turn_rel_dir)
+
     local directions = { "north", "east", "south", "west" }
     local offset = 0
     if turn_rel_dir == RelativeTurnDirection.LEFT then
@@ -354,12 +353,12 @@ end
 -- Suck() funcs
 function wrapSuckFunc(turtle_plus, suckFunc)
     function newSuckFunc(amount)
-        local beforeAmt = turtle_plus:countEntireInventory()
+        local beforeAmt = turtle_plus:countEntireInventory().total
         local result, reason = suckFunc(amount)
         if not result then
             return result, reason
         else
-            local afterAmt = turtle_plus:countEntireInventory()
+            local afterAmt = turtle_plus:countEntireInventory().total
             return afterAmt - beforeAmt
         end
     end
@@ -518,8 +517,9 @@ function TurtlePlus:moveN(dir, do_correct, retry_sec, ignore_command_flag, num_m
     end
 end
 
-function wrapMoveFunc(turtle_plus, move_func)
+function wrapMoveFunc(turtle_plus, move_func, ignore_command_flag)
     function wrappedFunc()
+        turtlePlusCheckListenToCommands(turtle_plus, ignore_command_flag)
         turtle_plus:checkFuel()
         return move_func()
     end
@@ -541,14 +541,14 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
             self:dig(MoveDirection.UP, nil, nil, nil, 0, ignore_command_flag)
         end
 
-        waitAndRetry(wrapMoveFunc(self, turtle.up), 5, "Moving up failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.up, ignore_command_flag), 5, "Moving up failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         self.current_down = self.current_down - 1
         return
     elseif dir == MoveDirection.DOWN then
         if do_dig then
             self:dig(MoveDirection.DOWN, nil, nil, nil, 0, ignore_command_flag)
         end
-        waitAndRetry(wrapMoveFunc(self, turtle.down), 5, "Moving down failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.down, ignore_command_flag), 5, "Moving down failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         self.current_down = self.current_down + 1
         return
     end
@@ -607,7 +607,7 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
         if do_dig then
             self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
         end
-        waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.forward, ignore_command_flag), retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         if do_correct then
             turtle.turnRight()
         else
@@ -620,7 +620,7 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
             self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
         end
 
-        waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving east failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.forward, ignore_command_flag), retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
         if do_correct then
             turtle.turnLeft()
         else
@@ -630,13 +630,13 @@ function TurtlePlus:move(dir, do_correct, retry_sec, ignore_command_flag, do_dig
         if do_dig then
             self:dig(self.current_direction, nil, nil, nil, 0, ignore_command_flag)
         end
-        waitAndRetry(wrapMoveFunc(self, turtle.forward), retry_sec, "Moving north failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.forward, ignore_command_flag), retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     elseif new_direction == MoveDirection.SOUTH then
         if do_dig then
             self:dig(MoveDirection:opposite(self.current_direction), nil, true, true, 1, ignore_command_flag)
         end
 
-        waitAndRetry(wrapMoveFunc(self, turtle.back), retry_sec, "Moving south failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(wrapMoveFunc(self, turtle.back, ignore_command_flag), retry_sec, "Moving back failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     end
 
     if dir == MoveDirection.NORTH then
@@ -667,7 +667,6 @@ function TurtlePlus:goHome(do_dig, ignore_command_flag)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
 
     self:turn(MoveDirection.NORTH, ignore_command_flag)
-    print("current down " .. tostring(self.current_down))
     self:moveN(MoveDirection.UP, false, nil, ignore_command_flag, self.current_down, do_dig)
 
     self:turnRelative(RelativeTurnDirection.LEFT, ignore_command_flag)
@@ -707,14 +706,72 @@ function TurtlePlus:dropOffInventoryAtHome(dir)
     self:goTo(f, r, d)
 end
 
-function TurtlePlus:countEntireInventory()
+function TurtlePlus:totalBlocksInInventory(specific_blocks)
+    if specific_blocks == nil then
+        return 0
+    end
+    local inv_count = self:countEntireInventory(specific_blocks)
+    local total = 0
+    for i=1,table.getn(specific_blocks),1 do
+        total = total + inv_count[specific_blocks[i]]
+    end
+    return total
+end
+
+function TurtlePlus:countSelectedSlot(name)
+    local data = turtle.getItemDetail()
+    if data == nil then
+        return 0
+    end
+    if name ~= nil then
+        if data.name == name then
+            return data.count
+        else
+            return 0
+        end
+    end
+    return data.count
+end
+
+function TurtlePlus:selectNext(specific_blocks)
+    local selected = turtle.getSelectedSlot()
+    for i=selected,INVENTORY_SIZE-selected,1 do
+        turtle.select(i)
+        for j=1,table.getn(specific_blocks),1 do
+            local count = 0
+            if specific_blocks ~= nil then
+                count = self:countSelectedSlot(specific_blocks[j])
+            else
+                count = self:countSelectedSlot()
+            end
+            if count > 0 then
+                return
+            end
+        end
+    end
+end
+
+function TurtlePlus:countEntireInventory(specific_blocks)
     local prev_selected_slot = turtle.getSelectedSlot()
     local total = 0
+    local totals = {}
     for i = 1, INVENTORY_SIZE, 1 do
         total = total + turtle.getItemCount(i)
+        if specific_blocks ~= nil then
+            for j=1,table.getn(specific_blocks),1 do
+                local key = specific_blocks[j]
+                if totals[key] == nil then
+                    totals[key] = self:countSelectedSlot(key)
+                else
+                    totals[key] = totals[key] + self:countSelectedSlot(key)
+                end
+            end
+        end
     end
     turtle.select(prev_selected_slot)
-    return total
+    totals["total"] = total
+
+    return totals
 end
 
 function TurtlePlus:numMovesFromHome()
@@ -723,6 +780,31 @@ end
 
 function TurtlePlus:finish()
     self.keep_running = false
+end
+
+function TurtlePlus:line(func, length)
+    for i = 1, length-1,1 do
+        func(self)
+        self:forward()
+    end
+end
+
+function TurtlePlus:plane(func, width, length)
+    local turn_direction = RelativeTurnDirection.RIGHT
+
+    for i = 1, width, 1 do
+        self:line(func, length)
+        if i ~= width then
+            self:turnRelative(turn_direction)
+            func(self)
+            self:forward()
+            self:turnRelative(turn_direction)
+            turn_direction = RelativeTurnDirection:opposite(turn_direction)
+        else
+            return
+        end
+    end
+    func(self) -- last block
 end
 
 function runTurtlePlus(turtle_plus, main_func)

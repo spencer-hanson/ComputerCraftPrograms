@@ -44,7 +44,7 @@ function main(t)
         error("DROP_COUNT can't be larger than 64!")
     end
 
-    if t:countEntireInventory() ~= 0 then
+    if t:countEntireInventory().total ~= 0 then
         error("Please empty turtle before starting program!")
     end
 

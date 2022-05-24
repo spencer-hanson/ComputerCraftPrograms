@@ -4,7 +4,7 @@ for i=1,16,1 do
     while true do
         turtle.select(i)
         local suc, str = turtle.drop()
-        if not suc then
+        if not suc and str == "No space for items" then
             print("Can't drop into input inventory '" .. str .. "', please fix!")
             os.sleep(2)
         else

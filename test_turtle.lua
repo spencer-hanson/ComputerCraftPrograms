@@ -46,10 +46,23 @@ function main(t)
     --t:goHome(true)
 
     --t:goTo(8, 8, 8, nil, true)
-    t.current_forward = 8
-    t.current_right = 8
-    t.current_down = 8
-    t:goHome(true)
+    --t.current_forward = 8
+    --t.current_right = 8
+    --t.current_down = 8
+    --t:goHome(true)
+
+    local forward = t.current_forward
+    local right = t.current_right
+    local down = t.current_down
+
+    t:goHome()
+    t:drop(MoveDirection.SOUTH, nil, false, true, 5)
+    t:suck(MoveDirection.WEST, 1, false, true, 5)
+
+    t:goTo(forward, right, down)
+
+    print("Done")
+    os.sleep(10)
     t:finish()
 end
 
