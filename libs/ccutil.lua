@@ -44,6 +44,15 @@ function wrapFuncInWaitAndRetryFunc(func, sleep_time, check_func, message)
     return wrappedFunc
 end
 
+function contains(value, list)
+    for i=1,table.getn(list),1 do
+        if value == list[i] then
+            return i
+        end
+    end
+    return false
+end
+
 function waitAndRetryFunc(func, sleep_time, check_func, message, ...)
     -- ... is arg for func
     while true do

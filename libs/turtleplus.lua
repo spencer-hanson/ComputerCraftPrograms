@@ -342,6 +342,7 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     -- do_turn -  turn back to the original direction
     -- retry_sec how long to wait between tries (if <= 0 will not retry)
     -- if amount == -1 drop all
+    amount = defaultNil(amount, -1)
     dir = defaultNil(dir, MoveDirection.NORTH)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
@@ -388,6 +389,7 @@ end
 function TurtlePlus:dropEntireInventory(dir, retry_sec)
     turtlePlusCheckListenToCommands(self)
     validateMoveDirection(dir)
+    retry_sec = defaultNil(retry_sec, 5)
     for i = 1, INVENTORY_SIZE, 1 do
         turtle.select(i)
         self:drop(dir, -1, false, false, retry_sec)
@@ -398,14 +400,17 @@ end
 function TurtlePlus:suckUntilStuff(direction, specific_blocks, num)
     -- suck until inventory gets greater than or equal to the number of specific blocks
     -- set to -1 for any nonzero amount
+    num = defaultNil(num, -1)
+    local total_found = 0
     local found_blocks = self:totalBlocksInInventory(specific_blocks)
     while true do
         print("Attempting to refill stuff..")
         self:suckUntilFail(direction)
         found_blocks = self:totalBlocksInInventory(specific_blocks)
+        total_found = total_found + found_blocks
         if found_blocks > 0 and num < 0 then
             return
-        elseif found_blocks >= num then
+        elseif total_found >= num then
             return
         else
             os.sleep(2)
@@ -754,6 +759,7 @@ function TurtlePlus:goHome(do_dig, ignore_command_flag)
     self.current_forward = 0
     self.current_right = 0
     self.current_down = 0
+    self:turn(MoveDirection.NORTH, ignore_command_flag)
 end
 
 function TurtlePlus:goTo(forward, right, down, do_correct, do_dig, ignore_command_flag)
@@ -820,13 +826,19 @@ function TurtlePlus:countSelectedSlot(name)
     return data.count
 end
 
-function TurtlePlus:selectNext(specific_blocks)
+function TurtlePlus:selectNext(specific_blocks, start_from)
+
     if specific_blocks == nil then
         error("Cannot selectNext(nil)!")
     end
 
     local selected = turtle.getSelectedSlot()
-    for i = selected, INVENTORY_SIZE, 1 do
+    if selected >= INVENTORY_SIZE then
+        selected = 1 -- loop back around
+    end
+    start_from = defaultNil(start_from, selected)
+
+    for i = start_from, INVENTORY_SIZE, 1 do
         turtle.select(i)
         for j = 1, table.getn(specific_blocks), 1 do
             local count = 0
