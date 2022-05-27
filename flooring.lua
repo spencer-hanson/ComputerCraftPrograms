@@ -54,7 +54,7 @@ function planeFunc(t)
 end
 
 function main(t)
-    t:plane(planeFunc, PLANE_FORWARD, PLANE_RIGHT)
+    t:plane(planeFunc, PLANE_RIGHT, PLANE_FORWARD)
 end
 
 runTurtlePlus(nil, main)

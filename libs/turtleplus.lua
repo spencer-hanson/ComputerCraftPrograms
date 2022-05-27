@@ -258,6 +258,49 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
 end
 
 -- Drop() funcs
+
+function TurtlePlus:dropStuffFunc(direction, func)
+    validateMoveDirection(direction)
+    -- Drop stuff according to func(item_name) -> true(drop) else (dont drop)
+    local currently_selected_slot = turtle.getSelectedSlot()
+    for i = 1, INVENTORY_SIZE, 1 do
+        local info = self:getSlotDetails(i)
+        if func(info.name) then
+            turtle.select(i)
+            self:drop(direction, -1, false, true, -1)
+        end
+    end
+    turtle.select(currently_selected_slot)
+end
+
+function TurtlePlus:dropStuffWhitelist(direction, whitelisted_stuff_names)
+    validateMoveDirection(direction)
+    -- Drop only whitelisted stuff
+    local function nameMatches(name)
+        for i = 1, table.getn(whitelisted_stuff_names), 1 do
+            if whitelisted_stuff_names[i] == name then
+                return true
+            end
+        end
+        return false
+    end
+    return self:dropStuffFunc(direction, nameMatches)
+end
+
+function TurtlePlus:dropStuffBlacklist(direction, blacklisted_stuff_names)
+    validateMoveDirection(direction)
+    -- Drop everything but blacklisted stuff
+    local function nameDoesntMatch(name)
+        for i = 1, table.getn(blacklisted_stuff_names), 1 do
+            if blacklisted_stuff_names[i] == name then
+                return false
+            end
+        end
+        return true
+    end
+    return self:dropStuffFunc(direction, nameDoesntMatch)
+end
+
 function wrapDropFunc(dropFunc)
     function newDropFunc(amount)
         local beforeAmt = turtle.getItemCount(turtle.getSelectedSlot())
@@ -297,7 +340,7 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     turtlePlusCheckListenToCommands(self)
     -- do_correct - correct back to north
     -- do_turn -  turn back to the original direction
-    -- retry_sec how long to wait between tries (if < 0 will not retry)
+    -- retry_sec how long to wait between tries (if <= 0 will not retry)
     -- if amount == -1 drop all
     dir = defaultNil(dir, MoveDirection.NORTH)
     do_correct = defaultNil(do_correct, true)
@@ -315,6 +358,10 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
 
     local function dropCheckFunc(item_count, ...)
         --debugM("Checking " .. tostring(item_count) .. " - " .. strlist(arg))
+        if retry_sec <= 0 then
+            return true
+        end
+
         if item_count == false then
             return false
         elseif item_count == true then
@@ -322,9 +369,6 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
         end
 
         dropped_count = dropped_count + item_count
-        if retry_sec == 0 then
-            return true
-        end
 
         if dropped_count ~= amount then
             print("Dropped amount failure, ActualDropped " .. tostring(dropped_count) .. " != AmountToDrop " .. amount)
@@ -351,6 +395,38 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec)
 end
 
 -- Suck() funcs
+function TurtlePlus:suckUntilStuff(direction, specific_blocks, num)
+    -- suck until inventory gets greater than or equal to the number of specific blocks
+    -- set to -1 for any nonzero amount
+    local found_blocks = self:totalBlocksInInventory(specific_blocks)
+    while true do
+        print("Attempting to refill stuff..")
+        self:suckUntilFail(direction)
+        found_blocks = self:totalBlocksInInventory(specific_blocks)
+        if found_blocks > 0 and num < 0 then
+            return
+        elseif found_blocks >= num then
+            return
+        else
+            os.sleep(2)
+        end
+    end
+end
+
+function TurtlePlus:suckUntilFail(direction)
+    direction = defaultNil(direction, self.current_direction)
+    validateMoveDirection(direction)
+    -- fail reasons
+    -- No items to take
+    -- No space for items
+    while true do
+        local success, reason = self:suck(direction, -1, false, true, -1)
+        if not success then
+            return reason
+        end
+    end
+end
+
 function wrapSuckFunc(turtle_plus, suckFunc)
     function newSuckFunc(amount)
         local beforeAmt = turtle_plus:countEntireInventory().total
@@ -390,7 +466,7 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_com
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
     -- do_correct - correct back to north
     -- do_turn -  turn back to the original direction
-    -- retry_sec how long to wait between tries (if < 0 will not retry)
+    -- retry_sec how long to wait between tries (if <= 0 will not retry)
 
     -- if amount == -1 or nil suck all
     dir = defaultNil(dir, MoveDirection.NORTH)
@@ -405,7 +481,7 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_com
     end
 
     local function suckCheckFunc(item_count, message)
-        if retry_sec == 0 then
+        if retry_sec <= 0 then
             return true
         end
 
@@ -685,9 +761,10 @@ function TurtlePlus:goTo(forward, right, down, do_correct, do_dig, ignore_comman
     ignore_command_flag = defaultNil(ignore_command_flag, false)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
     local old_dir = self.current_direction
-    self:moveN(MoveDirection.NORTH, false, nil, ignore_command_flag, forward, do_dig)
-    self:moveN(MoveDirection.EAST, false, nil, ignore_command_flag, right, do_dig)
-    self:moveN(MoveDirection.DOWN, false, nil, ignore_command_flag, down, do_dig)
+
+    self:moveN(MoveDirection.NORTH, false, nil, ignore_command_flag, forward - self.current_forward, do_dig)
+    self:moveN(MoveDirection.EAST, false, nil, ignore_command_flag, right - self.current_right, do_dig)
+    self:moveN(MoveDirection.DOWN, false, nil, ignore_command_flag, down - self.current_down, do_dig)
 
     if do_correct then
         self:turn(old_dir, ignore_command_flag)
@@ -712,10 +789,20 @@ function TurtlePlus:totalBlocksInInventory(specific_blocks)
     end
     local inv_count = self:countEntireInventory(specific_blocks)
     local total = 0
-    for i=1,table.getn(specific_blocks),1 do
+    for i = 1, table.getn(specific_blocks), 1 do
         total = total + inv_count[specific_blocks[i]]
     end
     return total
+end
+
+function TurtlePlus:getSlotDetails(slot)
+    slot = defaultNil(slot, turtle.getSelectedSlot())
+    local data = turtle.getItemDetail(slot)
+    if data ~= nil then
+        return data
+    else
+        return { name = "none", count = 0 }
+    end
 end
 
 function TurtlePlus:countSelectedSlot(name)
@@ -734,10 +821,14 @@ function TurtlePlus:countSelectedSlot(name)
 end
 
 function TurtlePlus:selectNext(specific_blocks)
+    if specific_blocks == nil then
+        error("Cannot selectNext(nil)!")
+    end
+
     local selected = turtle.getSelectedSlot()
-    for i=selected,INVENTORY_SIZE-selected,1 do
+    for i = selected, INVENTORY_SIZE, 1 do
         turtle.select(i)
-        for j=1,table.getn(specific_blocks),1 do
+        for j = 1, table.getn(specific_blocks), 1 do
             local count = 0
             if specific_blocks ~= nil then
                 count = self:countSelectedSlot(specific_blocks[j])
@@ -745,20 +836,23 @@ function TurtlePlus:selectNext(specific_blocks)
                 count = self:countSelectedSlot()
             end
             if count > 0 then
-                return
+                return true
             end
         end
     end
+    return false
 end
 
 function TurtlePlus:countEntireInventory(specific_blocks)
     local prev_selected_slot = turtle.getSelectedSlot()
     local total = 0
     local totals = {}
+
     for i = 1, INVENTORY_SIZE, 1 do
         total = total + turtle.getItemCount(i)
+        turtle.select(i)
         if specific_blocks ~= nil then
-            for j=1,table.getn(specific_blocks),1 do
+            for j = 1, table.getn(specific_blocks), 1 do
                 local key = specific_blocks[j]
                 if totals[key] == nil then
                     totals[key] = self:countSelectedSlot(key)
@@ -767,10 +861,10 @@ function TurtlePlus:countEntireInventory(specific_blocks)
                 end
             end
         end
+
     end
     turtle.select(prev_selected_slot)
     totals["total"] = total
-
     return totals
 end
 
@@ -779,25 +873,58 @@ function TurtlePlus:numMovesFromHome()
 end
 
 function TurtlePlus:finish()
+    self:turn(MoveDirection.NORTH)
     self.keep_running = false
 end
 
-function TurtlePlus:line(func, length)
-    for i = 1, length-1,1 do
+
+
+--function TurtlePlus:fillInventoryWithStuff(stuff_names)
+--    while s do
+--        s, r = t:suck(BLOCKS_CHEST, nil, false, true, 5)
+--    end
+--    if t:totalBlocksInInventory(BLOCKS_NAMES) == 0 then
+--        t:suck(BLOCKS_CHEST, 1, false, true, 5)
+--        t:suck(BLOCKS_CHEST, nil, false, true, 5)
+--    end
+--end
+
+
+function TurtlePlus:cube(func, height, width, length, go_down, do_dig)
+    do_dig = defaultNil(do_dig, true)
+    for i = 1, height, 1 do
+        self:plane(func, width, length, do_dig)
         func(self)
-        self:forward()
+        if i ~= height then
+            if go_down then
+                self:down(do_dig)
+            else
+                self:up(do_dig)
+            end
+        end
+
+        self:turn(MoveDirection:opposite(self.current_direction))
     end
 end
 
-function TurtlePlus:plane(func, width, length)
+function TurtlePlus:line(func, length, do_dig)
+    do_dig = defaultNil(do_dig, true)
+    for i = 1, length - 1, 1 do
+        func(self)
+        self:forward(do_dig)
+    end
+end
+
+function TurtlePlus:plane(func, width, length, do_dig)
+    do_dig = defaultNil(do_dig, true)
     local turn_direction = RelativeTurnDirection.RIGHT
 
     for i = 1, width, 1 do
-        self:line(func, length)
+        self:line(func, length, do_dig)
         if i ~= width then
             self:turnRelative(turn_direction)
             func(self)
-            self:forward()
+            self:forward(do_dig)
             self:turnRelative(turn_direction)
             turn_direction = RelativeTurnDirection:opposite(turn_direction)
         else

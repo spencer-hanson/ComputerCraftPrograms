@@ -1,6 +1,6 @@
 require("libs/turtleplus")
 DROP_COUNT = 11 -- how many to drop each iteration
-CRAFT_SLEEP = 500 -- how long to sleep before crafting again
+CRAFT_SLEEP = 800 -- how long to sleep before crafting again
 CRAFT_MATERIAL_NAMES = {"modern_industrialization:coke", "minecraft:coal"}
 EXCESS_CHEST_DIRECTION = MoveDirection.WEST
 

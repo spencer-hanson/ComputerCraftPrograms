@@ -34,7 +34,7 @@ function musicClient(t)
         local has_item = t:suck(CHEST_1_LOCATION)
         if has_item then
             local put_disk = t:drop(DISC_DRIVE_LOCATION, 1, false, true, 0)
-            print("put_disk " .. tostring(put_disk))
+            --print("put_disk " .. tostring(put_disk))
 
             local disk_name = nil
             if disk_name == nil then
@@ -45,7 +45,7 @@ function musicClient(t)
                 local last_dir = t.current_direction
                 t:turn(MoveDirection.NORTH)
                 disk.playAudio(drive_mapping[DISC_DRIVE_LOCATION])
-                print("Playing '" .. disk.getAudioTitle(disk_name) .. "'")
+                --print("Playing '" .. disk.getAudioTitle(disk_name) .. "'")
                 os.sleep(SONG_SLEEP_TIME)
                 t:turn(last_dir)
             end

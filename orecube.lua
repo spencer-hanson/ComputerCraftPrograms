@@ -4,63 +4,66 @@ require("./libs/movement")
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 BLOCKS_CHEST = MoveDirection.WEST
-CUBE_FORWARD = 2
-CUBE_RIGHT = 2
-CUBE_DOWN = 2
+CUBE_FORWARD = 11
+CUBE_RIGHT = 11
+CUBE_DOWN = 5
+DIG_HOME = true
+REPLACE_FLOOR = true
 
-TURN_DIRECTION = RelativeTurnDirection.RIGHT
+BLOCKS_NAMES = {"minecraft:stone"}
+ORECHID_NAME_SLOT_16 = "botania:orechid"
+DIRT_NAME_SLOT_15 = "minecraft:dirt"
 
-function line(t, func, length)
-    for i = 1, length-1, 1 do
-        func()
-        t:forward()
-    end
-end
 
-function plane(t, func, width, length)
-    for i = 1, width, 1 do
-        line(t, func, length)
-        if i ~= width then
-            t:turnRelative(TURN_DIRECTION)
-            func()
-            t:forward()
-            func()
-            t:turnRelative(TURN_DIRECTION)
-            TURN_DIRECTION = RelativeTurnDirection:opposite(TURN_DIRECTION)
-        else
+function placeFunc(t)
+    local past_facing_direction = t.current_direction
+    while true do
+        print("Placing..")
+        t:selectNext(BLOCKS_NAMES)
+        local success, reason = turtle.placeDown() -- todo placing api
+        if success then
+            t:turn(past_facing_direction)
             return
-        end
-    end
-end
+        elseif reason == "No items to place" then
+            if t:totalBlocksInInventory(BLOCKS_NAMES) == 0 then
+                local forward = t.current_forward
+                local right = t.current_right
+                local down = t.current_down
+                t:goHome()
 
-function cube(t, func, height, width, length, go_down)
-    for i=1,height,1 do
-        plane(t, func, width, length)
-        func()
-        if go_down then
-            t:down()
+                t:dropStuffBlacklist(DROP_CHEST, BLOCKS_NAMES)
+                t:suckUntilStuff(BLOCKS_CHEST, BLOCKS_NAMES, 64)
+                t:goTo(forward, right, down)
+            else
+                t:selectNext(BLOCK_NAMES)
+            end
+        elseif reason == "Cannot place block here" then
+            if REPLACE_FLOOR then
+                t:digDown()
+            else
+                t:turn(past_facing_direction)
+                return
+            end
         else
-            t:up()
+            print("Cannot place, reason: " .. tostring(reason))
+            os.sleep(1)
         end
-
-        t:turn(MoveDirection:opposite(t.current_direction))
     end
 end
+
 
 function main(t)
-    function dig()
+    function dig(tt)
         turtle.digDown()
     end
 
-    function place()
-        turtle.placeDown()
-    end
+    t:cube(dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true)
+    t:goTo(0, 0, CUBE_DOWN-1)
 
-    cube(t, dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true)
-    t:up() -- need because we're placing underneath
-    cube(t, place, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, false)
+    t:cube(placeFunc, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, false)
     print("Finished, going home")
     t:goHome()
+    t:dropStuffBlacklist(DROP_CHEST, BLOCKS_NAMES)
     t:finish()
 end
 

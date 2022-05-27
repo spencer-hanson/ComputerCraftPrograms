@@ -2,8 +2,8 @@ require("./libs/turtleplus")
 require("./libs/movement")
 OUTPUT_CHEST = MoveDirection.SOUTH
 FUEL_CHEST = MoveDirection.UP
-TUNNEL_LENGTH = 32
-NUM_ROWS = 32
+TUNNEL_LENGTH = 64
+NUM_ROWS = 64
 FIRST_TURN = RelativeTurnDirection.RIGHT
 
 function turnAround(t)

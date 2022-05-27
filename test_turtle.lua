@@ -1,5 +1,6 @@
 require("./libs/turtleplus")
-
+require("./libs/ccutil")
+require("./libs/movement")
 function main(t)
     -- Turn directionality test
     --local dirs = {"north","east","south","west"}
@@ -51,18 +52,39 @@ function main(t)
     --t.current_down = 8
     --t:goHome(true)
 
-    local forward = t.current_forward
-    local right = t.current_right
-    local down = t.current_down
+    --local forward = t.current_forward
+    --local right = t.current_right
+    --local down = t.current_down
+    --
+    --t:goHome()
+    --t:drop(MoveDirection.SOUTH, nil, false, true, 5)
+    --t:suck(MoveDirection.WEST, 1, false, true, 5)
+    --t:goTo(forward, right, down)
+    --print("Done")
 
-    t:goHome()
-    t:drop(MoveDirection.SOUTH, nil, false, true, 5)
-    t:suck(MoveDirection.WEST, 1, false, true, 5)
+    -- drop stuff
+    --t:dropStuffWhitelist(MoveDirection.WEST, {"minecraft:dirt"})
+    --t:dropStuffBlacklist(MoveDirection.WEST, {"minecraft:dirt"})
+    --t:turn(MoveDirection.NORTH)
+    --print("start")
+    --turtle.select(1)
+    --t:selectNext({"minecraft:dirt", "minecraft:charcoal"})
+    --print("Dropping first found")
+    --t:drop(MoveDirection.WEST)
+    --
+    --t:selectNext({"minecraft:dirt", "minecraft:charcoal"})
+    --print("dropping second found")
+    --t:drop(MoveDirection.WEST)
+    --
+    --print("drop third found")
+    --t:selectNext({"minecraft:dirt", "minecraft:charcoal"})
+    --t:drop(MoveDirection.WEST)
+    --
+    --t:turn(MoveDirection.NORTH)
 
-    t:goTo(forward, right, down)
 
-    print("Done")
-    os.sleep(10)
+
+
     t:finish()
 end
 
