@@ -390,6 +390,8 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec)
     turtlePlusCheckListenToCommands(self)
     validateMoveDirection(dir)
     retry_sec = defaultNil(retry_sec, 5)
+
+    self:turn(dir)
     for i = 1, INVENTORY_SIZE, 1 do
         turtle.select(i)
         self:drop(dir, -1, false, false, retry_sec)
@@ -850,6 +852,15 @@ function TurtlePlus:selectNext(specific_blocks, start_from)
             if count > 0 then
                 return true
             end
+        end
+    end
+    return false
+end
+
+function TurtlePlus:hasEmptySlot()
+    for i=1,INVENTORY_SIZE,1 do
+        if self:getSlotDetails(i).name == "none" then
+            return true
         end
     end
     return false

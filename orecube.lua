@@ -6,7 +6,7 @@ DROP_CHEST = MoveDirection.SOUTH
 BLOCKS_CHEST = MoveDirection.WEST
 CUBE_FORWARD = 11
 CUBE_RIGHT = 11
-CUBE_DOWN = 2
+CUBE_DOWN = 5
 DIG_HOME = true
 REPLACE_FLOOR = true
 
@@ -59,21 +59,35 @@ end
 
 
 function makeCube(t)
+    t:goHome()
     t:goTo(0, 0, CUBE_DOWN-1)
     t:turn(MoveDirection.NORTH)
     t:cube(placeFunc, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, false)
 end
 
-function dig(tt)
+function dig(t)
     -- TODO Check if inventory is full!
+    if not t:hasEmptySlot() then
+        local forward = t.current_forward
+        local right = t.current_right
+        local down = t.current_down
+        local direction = t.current_direction
+
+        t:goHome()
+        t:dropEntireInventory(DROP_CHEST)
+        t:goTo(forward, right, down)
+        t:turn(direction)
+    end
     turtle.digDown()
 end
 
 function deleteCube(t)
+    t:goHome()
     t:cube(dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true)
 end
 
 function putFlower(t)
+    t:goHome()
     t:forward()
     while true do
         t:suckUntilFail(FLOWER_CHEST)
@@ -98,6 +112,7 @@ function putFlower(t)
 end
 
 function removeFlower(t)
+    t:goHome()
     t:goTo(FLOWER_PLACE_FORWARD, FLOWER_PLACE_RIGHT, 0)
     t:moveN("down", nil, nil, nil, FLOWER_PLACE_DOWN-1, true)
     t:digDown()
@@ -111,6 +126,7 @@ function removeFlower(t)
 end
 
 function cleanInventory(t)
+    t:goHome()
     t:dropStuffBlacklist(DROP_CHEST, BLOCKS_NAMES)
     t:dropStuffWhitelist(BLOCKS_CHEST, BLOCKS_NAMES)
     t:dropEntireInventory(DROP_CHEST, -1)
