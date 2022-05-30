@@ -7,7 +7,6 @@ EXCESS_CHEST_DIRECTION = MoveDirection.WEST
 
 function craftCokeBlocks()
     local item_detail = turtle.getItemDetail()
-    print("item_detail " .. strlist(item_detail) or "nil")
     local items_in_slot = 64
     if item_detail ~= nil then
         items_in_slot = item_detail.count

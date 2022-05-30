@@ -1,3 +1,5 @@
+-- script deprecated in favor of computersort.lua
+
 print("Starting standardization..")
 print("Dropping inventory..")
 for i=1,16,1 do

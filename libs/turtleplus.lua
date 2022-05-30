@@ -179,7 +179,9 @@ function TurtlePlus:turn(turn_dir, ignore_command_flag)
         return self:turnRelative(turn_dir, ignore_command_flag)
     end
 
-    validateTurnDirection(turn_dir)
+    if turn_dir == MoveDirection.UP or turn_dir == MoveDirection.DOWN then
+        return
+    end
 
     local turn_mapping = {
         -- current_position -> new position -> list of moves to get there
@@ -263,6 +265,7 @@ function TurtlePlus:dropStuffFunc(direction, func)
     validateMoveDirection(direction)
     -- Drop stuff according to func(item_name) -> true(drop) else (dont drop)
     local currently_selected_slot = turtle.getSelectedSlot()
+
     for i = 1, INVENTORY_SIZE, 1 do
         local info = self:getSlotDetails(i)
         if func(info.name) then
@@ -390,12 +393,14 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec)
     turtlePlusCheckListenToCommands(self)
     validateMoveDirection(dir)
     retry_sec = defaultNil(retry_sec, 5)
+    local last_slot = turtle.getSelectedSlot()
 
     self:turn(dir)
     for i = 1, INVENTORY_SIZE, 1 do
         turtle.select(i)
         self:drop(dir, -1, false, false, retry_sec)
     end
+    turtle.select(last_slot)
 end
 
 -- Suck() funcs
@@ -434,8 +439,12 @@ function TurtlePlus:suckUntilFail(direction)
     end
 end
 
-function wrapSuckFunc(turtle_plus, suckFunc)
+function wrapSuckFunc(turtle_plus, suckFunc, count_sucked)
     function newSuckFunc(amount)
+        if not count_sucked then
+            return suckFunc(amount)
+        end
+
         local beforeAmt = turtle_plus:countEntireInventory().total
         local result, reason = suckFunc(amount)
         if not result then
@@ -468,7 +477,7 @@ function TurtlePlus:suckRight(amount, do_correct, do_turn, retry_sec)
     return self:suck(MoveDirection:right(self.current_direction), amount, do_correct, do_turn, retry_sec)
 end
 
-function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_command_flag)
+function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_command_flag, count_sucked)
     ignore_command_flag = defaultNil(ignore_command_flag, false)
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
     -- do_correct - correct back to north
@@ -477,6 +486,7 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_com
 
     -- if amount == -1 or nil suck all
     dir = defaultNil(dir, MoveDirection.NORTH)
+    count_sucked = defaultNil(count_sucked, true)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
     retry_sec = defaultNil(retry_sec, 0)
@@ -506,9 +516,9 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_com
         end
     end
 
-    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp, count_sucked), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck, count_sucked), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown, count_sucked), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
 
     return self:doDirectionalFunc(dir, { amount }, up, down, f, do_correct, do_turn, retry_sec, ignore_command_flag)
 end
