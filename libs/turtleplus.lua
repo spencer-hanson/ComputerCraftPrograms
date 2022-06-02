@@ -260,16 +260,30 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
 end
 
 -- Drop() funcs
+function TurtlePlus:getNonEmptySlots()
+    local slots = {}
+    local count = 1
+
+    for i=1,INVENTORY_SIZE,1 do
+        local info = self:getSlotDetails(i)
+        if info.count ~= 0 then
+            slots[count] = i
+            count = count + 1
+        end
+    end
+    return slots
+end
 
 function TurtlePlus:dropStuffFunc(direction, func)
     validateMoveDirection(direction)
     -- Drop stuff according to func(item_name) -> true(drop) else (dont drop)
     local currently_selected_slot = turtle.getSelectedSlot()
+    local stuff_slots = self:getNonEmptySlots()
 
-    for i = 1, INVENTORY_SIZE, 1 do
-        local info = self:getSlotDetails(i)
+    for i = 1, table.getn(stuff_slots), 1 do
+        local slot = stuff_slots[i]
+        local info = self:getSlotDetails(slot)
         if func(info.name) then
-            turtle.select(i)
             self:drop(direction, -1, false, true, -1)
         end
     end
@@ -396,8 +410,9 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec)
     local last_slot = turtle.getSelectedSlot()
 
     self:turn(dir)
-    for i = 1, INVENTORY_SIZE, 1 do
-        turtle.select(i)
+    local stuff_slots = self:getNonEmptySlots()
+    for i = 1, table.getn(stuff_slots), 1 do
+        turtle.select(stuff_slots[i])
         self:drop(dir, -1, false, false, retry_sec)
     end
     turtle.select(last_slot)
@@ -593,6 +608,11 @@ function TurtlePlus:left(do_dig, do_correct)
     do_correct = defaultNil(do_correct, true)
     return self:move(MoveDirection:left(self.current_direction), do_correct, nil, nil, do_dig)
 end
+
+function TurtlePlus:moveNum(dir, num)
+    return self:moveN(dir, nil, nil, nil, num, nil)
+end
+
 function TurtlePlus:moveN(dir, do_correct, retry_sec, ignore_command_flag, num_moves, do_dig)
     --print("Calling moveN with " .. tostring(dir) .. ", " .. tostring(dir) .. ", " .. tostring(retry_sec) .. ", " .. tostring(ignore_command_flag) .. ", " .. tostring(num_moves))
 
@@ -823,8 +843,10 @@ function TurtlePlus:getSlotDetails(slot)
     end
 end
 
-function TurtlePlus:countSelectedSlot(name)
-    local data = turtle.getItemDetail()
+function TurtlePlus:countSelectedSlot(name, slot)
+    slot = defaultNil(slot, turtle.getSelectedSlot())
+
+    local data = turtle.getItemDetail(slot)
     if data == nil then
         return 0
     end
@@ -877,26 +899,22 @@ function TurtlePlus:hasEmptySlot()
 end
 
 function TurtlePlus:countEntireInventory(specific_blocks)
-    local prev_selected_slot = turtle.getSelectedSlot()
     local total = 0
     local totals = {}
 
     for i = 1, INVENTORY_SIZE, 1 do
         total = total + turtle.getItemCount(i)
-        turtle.select(i)
         if specific_blocks ~= nil then
             for j = 1, table.getn(specific_blocks), 1 do
                 local key = specific_blocks[j]
                 if totals[key] == nil then
-                    totals[key] = self:countSelectedSlot(key)
+                    totals[key] = self:countSelectedSlot(key, i)
                 else
-                    totals[key] = totals[key] + self:countSelectedSlot(key)
+                    totals[key] = totals[key] + self:countSelectedSlot(key, i)
                 end
             end
         end
-
     end
-    turtle.select(prev_selected_slot)
     totals["total"] = total
     return totals
 end

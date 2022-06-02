@@ -2,8 +2,8 @@ require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
 
-INPUT_CHEST = MoveDirection.NORTH
-RECYCLE_CHEST = MoveDirection.WEST
+INPUT_CHEST = MoveDirection.UP
+RECYCLE_CHEST = MoveDirection.NORTH
 OUTPUT_CHEST = MoveDirection.DOWN
 
 RULES = {

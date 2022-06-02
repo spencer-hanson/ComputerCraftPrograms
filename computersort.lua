@@ -41,7 +41,9 @@ RULES = {
     "minecraft:deepslate_.+",
     "excavated_variants:.+",
     "ae2:deepslate_.+",
-    "gobber2:gobber2_ore_deepslate"
+    "gobber2:gobber2_ore_deepslate",
+    "indrev:deepslate_.+",
+    "techreborn:deepslate_.+"
 }
 
 function suck()
