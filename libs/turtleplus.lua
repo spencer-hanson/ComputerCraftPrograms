@@ -260,20 +260,6 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
 end
 
 -- Drop() funcs
-function TurtlePlus:getNonEmptySlots()
-    local slots = {}
-    local count = 1
-
-    for i=1,INVENTORY_SIZE,1 do
-        local info = self:getSlotDetails(i)
-        if info.count ~= 0 then
-            slots[count] = i
-            count = count + 1
-        end
-    end
-    return slots
-end
-
 function TurtlePlus:dropStuffFunc(direction, func)
     validateMoveDirection(direction)
     -- Drop stuff according to func(item_name) -> true(drop) else (dont drop)
@@ -284,6 +270,7 @@ function TurtlePlus:dropStuffFunc(direction, func)
         local slot = stuff_slots[i]
         local info = self:getSlotDetails(slot)
         if func(info.name) then
+            turtle.select(slot)
             self:drop(direction, -1, false, true, -1)
         end
     end
@@ -610,7 +597,7 @@ function TurtlePlus:left(do_dig, do_correct)
 end
 
 function TurtlePlus:moveNum(dir, num)
-    return self:moveN(dir, nil, nil, nil, num, nil)
+    return self:moveN(dir, false, nil, nil, num, nil)
 end
 
 function TurtlePlus:moveN(dir, do_correct, retry_sec, ignore_command_flag, num_moves, do_dig)
@@ -843,6 +830,10 @@ function TurtlePlus:getSlotDetails(slot)
     end
 end
 
+function TurtlePlus:countSlot(name, slot)
+    return self:countSelectedSlot(name, slot)
+end
+
 function TurtlePlus:countSelectedSlot(name, slot)
     slot = defaultNil(slot, turtle.getSelectedSlot())
 
@@ -873,20 +864,48 @@ function TurtlePlus:selectNext(specific_blocks, start_from)
     start_from = defaultNil(start_from, selected)
 
     for i = start_from, INVENTORY_SIZE, 1 do
-        turtle.select(i)
         for j = 1, table.getn(specific_blocks), 1 do
             local count = 0
             if specific_blocks ~= nil then
-                count = self:countSelectedSlot(specific_blocks[j])
+                count = self:countSlot(specific_blocks[j], i)
             else
-                count = self:countSelectedSlot()
+                count = self:countSlot(nil, i)
             end
             if count > 0 then
+                turtle.select(i)
                 return true
             end
         end
     end
     return false
+end
+
+function TurtlePlus:getNonEmptySlots()
+    local slots = {}
+    local count = 1
+
+    for i=1,INVENTORY_SIZE,1 do
+        local info = self:getSlotDetails(i)
+        if info.count ~= 0 then
+            slots[count] = i
+            count = count + 1
+        end
+    end
+    return slots
+end
+
+function TurtlePlus:getEmptySlots()
+    local slots = {}
+    local count = 1
+
+    for i=1,INVENTORY_SIZE,1 do
+        local info = self:getSlotDetails(i)
+        if info.count == 0 then
+            slots[count] = i
+            count = count + 1
+        end
+    end
+    return slots
 end
 
 function TurtlePlus:hasEmptySlot()
@@ -927,18 +946,6 @@ function TurtlePlus:finish()
     self:turn(MoveDirection.NORTH)
     self.keep_running = false
 end
-
-
-
---function TurtlePlus:fillInventoryWithStuff(stuff_names)
---    while s do
---        s, r = t:suck(BLOCKS_CHEST, nil, false, true, 5)
---    end
---    if t:totalBlocksInInventory(BLOCKS_NAMES) == 0 then
---        t:suck(BLOCKS_CHEST, 1, false, true, 5)
---        t:suck(BLOCKS_CHEST, nil, false, true, 5)
---    end
---end
 
 
 function TurtlePlus:cube(func, height, width, length, go_down, do_dig)

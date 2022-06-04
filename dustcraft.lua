@@ -2,12 +2,12 @@ require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
 
-INPUT_CHEST = MoveDirection.NORTH
-RECYCLE_CHEST = MoveDirection.WEST
+INPUT_CHEST = MoveDirection.UP
+RECYCLE_CHEST = MoveDirection.NORTH
 OUTPUT_CHEST = MoveDirection.DOWN
 
 RULES = {
-    -- 2x2 recipes
+    -- Techreborn 2x2 recipes
     { "techreborn:redstone_small_dust", "2x2" },
     { "techreborn:platinum_small_dust", "2x2" },
     { "techreborn:platinum_small_dust", "2x2" },
@@ -21,14 +21,20 @@ RULES = {
     { "techreborn:ruby_small_dust", "2x2" },
     { "techreborn:.+_small_dust", "2x2" },
 
-    -- 3x3 recipes
+
+    -- Techreborn 3x3 recipes
     { "techreborn:silver_nugget", "3x3" },
     { "techreborn:nickel_nugget", "3x3" },
     { "techreborn:lead_nugget", "3x3" },
     { "techreborn:tin_nugget", "3x3" },
     { "techreborn:.+_nugget", "3x3" },
 
-    { "minecraft:gold_nugget", "3x3"}
+    -- Minecraft 3x3
+    { "minecraft:gold_nugget", "3x3"},
+    { "minecraft:iron_nugget", "3x3"},
+
+    -- Modern Industrialization 3x3
+    { "modern_industrialization:.+_tiny_dust", "3x3"}
 }
 
 
