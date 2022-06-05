@@ -6,9 +6,7 @@ require("./libs/movement")
 
 -- TurtlePlus
 TurtlePlus = {
-    home_drop_direction = MoveDirection.SOUTH,
     home_fuel_direction = MoveDirection.UP,
-    home_refill_direction = MoveDirection.WEST,
     current_direction = TurnDirection.NORTH,
     current_forward = 0,
     current_right = 0,
@@ -21,10 +19,7 @@ function TurtlePlus:new(o)
     local o = o or {}
     setmetatable(o, TurtlePlus)
     self.__index = self
-
-    o.home_drop_direction = MoveDirection.SOUTH
     o.home_fuel_direction = MoveDirection.UP
-    o.home_refill_direction = MoveDirection.WEST
     o.current_direction = TurnDirection.NORTH
     o.current_forward = 0
     o.current_right = 0
@@ -797,14 +792,16 @@ function TurtlePlus:goTo(forward, right, down, do_correct, do_dig, ignore_comman
 end
 
 function TurtlePlus:dropOffInventoryAtHome(dir)
-    dir = defaultNil(dir, self.home_drop_direction)
+    if dir == nil then
+        error("cannot drop inventory at home, direction is nil!")
+    end
 
     turtlePlusCheckListenToCommands(self)
     local f = self.current_forward
     local r = self.current_right
     local d = self.current_down
     self:goHome()
-    self:dropEntireInventory(self.home_drop_direction, 5)
+    self:dropEntireInventory(dir, 5)
     self:goTo(f, r, d)
 end
 
