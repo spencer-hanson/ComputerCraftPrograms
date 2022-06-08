@@ -14,6 +14,12 @@
 - provisioning script for turtles with modem and pickaxe?
 - Make farm given buckets and seeds and size program
 - make basic mining program / other scripts for getting started in minecraft
+- generic quarry
+- basic house
+- blueprint pattern?
+- sorted computer
+- stat aggregation and graphs
+- circle builder/deleter
 
 ## Cool stuff
 - redstone api
