@@ -1,6 +1,8 @@
 require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
+-- Program to combine all the annoying different types of dusts from modpacks into their respective actualy items
+
 
 INPUT_CHEST = MoveDirection.UP
 RECYCLE_CHEST = MoveDirection.NORTH
@@ -66,8 +68,6 @@ CRAFTING_PATTERNS = {
     { "3x3", setup3x3 }
 }
 
-turtle_plus = TurtlePlus:new()
-
 function distributeEvenly(slots)
     -- distribute the current selected stack evenly (ish) among the given slots
     -- expects items in slot 1 will move out of slots into other slots
@@ -128,7 +128,7 @@ function recycleAndOutput()
     turtle_plus:dropEntireInventory(OUTPUT_CHEST)
 end
 
-function main(t)
+function main(turtle_plus)
     turtle.select(1)
     recycleAndOutput()
 
@@ -150,4 +150,5 @@ function main(t)
     end
 end
 
-runTurtlePlus(turtle_plus, main)
+runTurtlePlus(main)
+

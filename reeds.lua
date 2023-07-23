@@ -1,4 +1,6 @@
 require("./libs/turtleplus")
+
+-- Script to watch reeds grow
 FORWARD = 3
 RIGHT = 2
 SLEEP_TIME = 5
@@ -26,4 +28,4 @@ function main(t)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

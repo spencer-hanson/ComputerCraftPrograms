@@ -1,5 +1,7 @@
 require("libs/movement")
 require("libs/turtleplus")
+-- Turtle to manage songs on a disk drive player
+-- starts by playing all songs in chest 1 then repeats from chest 2else
 
 CHEST_1_LOCATION = MoveDirection.NORTH
 CHEST_2_LOCATION = MoveDirection.SOUTH
@@ -61,4 +63,4 @@ function musicClient(t)
 end
 
 print("Starting Music DJ..")
-runTurtlePlus(nil, musicClient)
+runTurtlePlus(musicClient)

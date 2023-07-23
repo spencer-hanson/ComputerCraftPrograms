@@ -1,7 +1,9 @@
 require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
-
+-- Sort items into different inventories, given a config
+-- Used to differentiate between things that needed additional processing before being put into a AE2 computer
+-- TODO add additional configurations for different arrangements of input and passthrough/process outputs
 
 turtle_plus = TurtlePlus:new()
 CURRENT_CONFIG = "DEFAULT"
@@ -24,12 +26,12 @@ end
 
 function PROCESS()
     local csuccess, creason = turtle.craft()
+    -- Try to craft the item to see if there's an oredictionary or something for this item
     if not csuccess then
         print("Craft() failed '" .. creason .. "' passing ore along")
     end
 
     PASSTHROUGH()
-    --turtle_plus:drop(PROCESS_CHEST, -1, nil, nil, 3)
 end
 
 function INPUT_STUFF()
@@ -80,13 +82,9 @@ function main()
     turtle.select(1)
     while true do
         suck()
-        sort()
+        sort(nil)
     end
 
-    --parallel.waitForAll(
-    --        suckThread,
-    --        sortThread
-    --)
 end
 
 main()

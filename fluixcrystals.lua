@@ -1,6 +1,9 @@
 require("./libs/movement")
 require("./libs/turtleplus")
 require("./libs/ccutil")
+
+-- Script to drop fluix crystals into a pool of water, then pick them back up after they've matured
+
 INPUT_CHEST = MoveDirection.NORTH
 OUTPUT_CHEST = MoveDirection.EAST
 
@@ -29,4 +32,4 @@ function main(t)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

@@ -2,33 +2,55 @@ require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
 
-WATER_BUCKET_FULL_DIRECTION = MoveDirection.WEST
-BUCKET_EMPTY_DIRECTION = MoveDirection.WEST
-DROP_CHEST = MoveDirection.SOUTH
-SEEDS_CHEST = MoveDirection.SOUTH
+-- Turtle should start with  a hoe equipped on the right (computercraft requires a diamond hoe and pick, undamaged
+-- a pickaxe should be in the TOOL CHEST
+-- SETUP LAYOUT - TOP DOWN
+-- [B][ ][ ][ ]
+-- [ ][H][ ][ ]
+-- [ ][D][T][S]
+-- Key
+-- [ ] -> Empty space
+-- [B] -> bucket chests, the water buckets are on the same level as the turtle, and the empty ones are one level up
+-- [H] -> Turtle home starting position
+-- [D] -> Drop off chests
+-- [T] -> Tool chest, on start should contain a pickaxe
+-- [S] -> Seeds chest, should contain plantable seeds
 
-TOOL_DIRECTION = MoveDirection.SOUTH
+-- ---------
+-- Constants
+-- ---------
+
+SEEDS_NAME = {"minecraft:wheat_seeds"}
+
+WATER_BUCKET_FULL_DIRECTION = MoveDirection.WEST -- one forward, same level
+BUCKET_EMPTY_DIRECTION = MoveDirection.WEST -- one block forward one block up
+DROP_CHEST = MoveDirection.SOUTH -- directly behind home
+SEEDS_CHEST = MoveDirection.SOUTH -- 2 east from home
+TOOL_DIRECTION = MoveDirection.SOUTH -- one block east from home
 
 PICKAXE_NAME = {"minecraft:diamond_pickaxe"}
 HOE_NAME = {"minecraft:diamond_hoe"}
 WATER_BUCKET_NAME = {"minecraft:water_bucket"}
 EMPTY_BUCKET_NAME = {"minecraft:bucket"}
-SEEDS_NAME = {"minecraft:wheat_seeds"}
+
 
 TOOLS = {PICKAXE_NAME[1], HOE_NAME[1]}
 
 function pickupBucket(t)
+    print("Picking up bucket")
     t:goHome()
     t:forward()
     t:suck(WATER_BUCKET_FULL_DIRECTION, 1, true, nil, 2)
 end
 
 function swapTool()
+    print("Swapping tool")
     -- tool on right side
     turtle.equipRight()
 end
 
 function checkTool(t)
+    print("Checking tool")
     if t:countEntireInventory().total ~= 0 then
         error("Please empty turtle before running!")
     end
@@ -59,6 +81,7 @@ function checkTool(t)
 end
 
 function exchangeTool(t)
+    print("Exchanging tool")
     t:goHome()
     t:right()
 
@@ -75,6 +98,7 @@ function exchangeTool(t)
 end
 
 function placeWater(t)
+    print("Placing water")
     exchangeTool(t)
     pickupBucket(t)
     t:goHome()
@@ -94,6 +118,7 @@ function placeWater(t)
 end
 
 function fillupSeeds(t)
+    print("Filling up seeds")
     t:goHome()
     t:moveNum("east", 2)
     t:suckUntilFail(SEEDS_CHEST)
@@ -101,6 +126,7 @@ function fillupSeeds(t)
 end
 
 function dropoffSeeds(t)
+    print("Dropping off seeds")
     t:goHome()
     t:moveNum("east", 2)
     t:dropStuffWhitelist(SEEDS_CHEST, SEEDS_NAME)
@@ -108,6 +134,7 @@ function dropoffSeeds(t)
 end
 
 function tillField(t)
+    print("Tilling field")
     function till()
         t:digDown()
         t:selectNext(SEEDS_NAME)
@@ -129,4 +156,4 @@ function main(t)
     t:finish()
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

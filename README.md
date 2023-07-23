@@ -1,15 +1,22 @@
+# Turtle Plus
+Turtle plus is a library under computercraft that is meant to aid in making turtle related programs
+during a program started with `runTurtlePlus(...)` if you push `h` the turtle will go home, 
+`f` will do the same thing, but will break blocks to get there
+- TODO trace steps and undo them?
+
+## Useful Links
+- [ComputerCraft API](https://computercraft.info/wiki/Category:APIs)
+
 # TODO
 ## Bugs
-- fix goHome(do_dig=true) backwards movement and breaking in certain cases
-- fix move(do_dig=True) for gravel/sand
-
+- currently no known bugs
 
 ## Additions
-- add dig_until_success to dig func
 - implement placement API
 - implement crafting API
 - customizable keybinds for funcs while running (currently only 'h')
-
+- docs lol?
+- 
 ## New scripts
 - provisioning script for turtles with modem and pickaxe?
 - Make farm given buckets and seeds and size program

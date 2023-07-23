@@ -1,6 +1,8 @@
 require("./libs/turtleplus")
 require("./libs/movement")
 
+-- Fill out a floor with a block/seeds/something placeable
+
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 BLOCKS_CHEST = MoveDirection.WEST
@@ -69,4 +71,4 @@ function main(t)
     t:finish()
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

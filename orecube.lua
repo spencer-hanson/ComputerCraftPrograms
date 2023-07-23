@@ -1,22 +1,42 @@
 require("./libs/turtleplus")
 require("./libs/movement")
 require("./libs/ccutil")
+
+-- Script to manage a cube of stone with a botania flower in the center that uses mana to turn the stone into ore
+-- This script will mine and re-place all the stone when run
+-- Setup - Top Down
+--
+-- [F][ ]
+-- [B][T]
+-- [ ][D]
+-- Key
+-- [F] -> chest containing the flower used, also 1 dirt
+-- [B] -> Blocks to place, in the cube
+-- [T] -> Turtle AND Fuel chest, where fuel is above the turtle
+-- [D] -> Drops chest, directly behind the turtle
+
+
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 BLOCKS_CHEST = MoveDirection.WEST
-CUBE_FORWARD = 11
+FLOWER_CHEST = MoveDirection.WEST -- note the flower chest is 1 forward from home, has both the flower and a single dirt
+
+CUBE_FORWARD = 11 -- cube is max range of flower
 CUBE_RIGHT = 11
 CUBE_DOWN = 5
 DIG_HOME = true
 REPLACE_FLOOR = true
 
-BLOCKS_NAMES = {"minecraft:stone"}
-FLOWER_CHEST = MoveDirection.WEST -- note the flower chest is 1 forward from home
-FLOWER_PLACE_FORWARD = 5
+--BLOCKS_NAMES = {"minecraft:stone"} -- overworld
+BLOCKS_NAMES = {"minecraft:netherrack"} -- nether
+
+FLOWER_PLACE_FORWARD = 5  -- Center of the cube
 FLOWER_PLACE_RIGHT = 5
 FLOWER_PLACE_DOWN = 3
 
-ORECHID_NAME = "botania:orechid"
+--ORECHID_NAME = "botania:orechid" -- overworld
+ORECHID_NAME = "botania:orechid_ignem" -- nether
+
 DIRT_NAME = "minecraft:dirt"
 
 
@@ -143,4 +163,4 @@ function main(t)
 end
 -- TODO Check if inventory is full!
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

@@ -1,4 +1,5 @@
 require("libs/turtleplus")
+-- Craft coke from coal
 DROP_COUNT = 11 -- how many to drop each iteration
 CRAFT_SLEEP = 800 -- how long to sleep before crafting again
 CRAFT_MATERIAL_NAMES = {"modern_industrialization:coke", "minecraft:coal"}
@@ -16,6 +17,7 @@ function craftCokeBlocks()
 
     local crafting_slots = {1,2,3,5,6,7,9,10,11}
     for i=2,9,1 do
+        -- Spread the item evenly across all 9 crafting slots
         turtle.transferTo(crafting_slots[i], items_per_slot)
     end
     turtle.craft()
@@ -88,4 +90,4 @@ function main(t)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

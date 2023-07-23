@@ -1,4 +1,8 @@
 require("./libs/turtleplus")
+-- Craft incoming items from an inventory above the turtle in a 3x3 crafting recipe to 'compress'
+-- output below
+INPUT_DIR = "north"
+OUTPUT_DIR = "down"
 
 function distributeEvenly(slots)
     -- distribute the current selected stack evenly (ish) among the given slots
@@ -18,7 +22,6 @@ function distributeEvenly(slots)
 end
 
 function setup3x3()
-
     distributeEvenly(slots)
 end
 
@@ -27,12 +30,12 @@ function main(t)
         local slots = { 1, 2, 3, 5, 6, 7, 9, 10, 11 }
         for i=1,table.getn(slots),1 do
             turtle.select(slots[i])
-            t:suck("north", 64, nil, nil, 2)
+            t:suck(INPUT_DIR, 64, nil, nil, 2)
         end
 
         turtle.craft()
-        t:dropEntireInventory("down")
+        t:dropEntireInventory(OUTPUT_DIR)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

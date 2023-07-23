@@ -1,29 +1,30 @@
 require("./libs/turtleplus")
+-- This script is for converting blocks on the botania pure daisy
+-- the turtle will go counter-clockwise relative to it's starting position, so keep that in mind
+-- The below constants specify where the input and output chests are relative to the starting position
+
 INPUT_CHEST = "up"
 OUTPUT_CHEST = "south"
 
-function doMove(t, dir)
-    t:move(dir, false)
-end
 
-function roundFunc(func, t)
-    func()
-    doMove(t, "north")
-    func()
-    doMove(t, "north")
-    func()
-    doMove(t, "west")
-    func()
-    doMove(t, "west")
-    func()
-    doMove(t, "south")
-    func()
-    doMove(t, "south")
-    func()
-    doMove(t, "east")
-    func()
-    doMove(t, "east")
-    func()
+function roundFunc(placeDownBlock, t)
+    placeDownBlock()
+    t:move("north", false)
+    placeDownBlock()
+    t:move("north", false)
+    placeDownBlock()
+    t:move("west", false)
+    placeDownBlock()
+    t:move("west", false)
+    placeDownBlock()
+    t:move("south", false)
+    placeDownBlock()
+    t:move("south", false)
+    placeDownBlock()
+    t:move("east", false)
+    placeDownBlock()
+    t:move("east", false)
+    placeDownBlock()
 end
 
 function main(t)
@@ -37,4 +38,4 @@ function main(t)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

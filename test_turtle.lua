@@ -88,4 +88,4 @@ function main(t)
     t:finish()
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)

@@ -2,6 +2,8 @@ require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
 
+-- Fill buckets between two chests, useful with the farm.lua script
+
 INPUT_CHEST = MoveDirection.UP
 OUTPUT_CHEST = MoveDirection.NORTH
 FULL_BUCKET = {"minecraft:water_bucket"}
@@ -20,5 +22,5 @@ function main(t)
     end
 end
 
-runTurtlePlus(nil, main)
+runTurtlePlus(main)
 
