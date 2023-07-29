@@ -23,6 +23,7 @@ TRASH_CHEST = CONFIG[CURRENT_CONFIG]["TRASH_CHEST"]
 EQUIPMENT_NAMES = {
     "sword",
     "pickaxe",
+    "shovel",
     "axe",
     "boots",
     "leggings",
