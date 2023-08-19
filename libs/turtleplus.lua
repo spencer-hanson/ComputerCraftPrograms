@@ -439,19 +439,22 @@ function TurtlePlus:suckUntilFail(direction)
     end
 end
 
-function wrapSuckFunc(turtle_plus, suckFunc, count_sucked)
+function wrapSuckFunc(turtle_plus, suckFunc, count_sucked, total_amount)
+    current_sucked = 0
+
     function newSuckFunc(amount)
         if not count_sucked then
             return suckFunc(amount)
         end
 
         local beforeAmt = turtle_plus:countEntireInventory().total
-        local result, reason = suckFunc(amount)
+        local result, reason = suckFunc(total_amount - current_sucked)
         if not result then
             return result, reason
         else
             local afterAmt = turtle_plus:countEntireInventory().total
-            return afterAmt - beforeAmt
+            current_sucked = current_sucked + afterAmt - beforeAmt
+            return current_sucked
         end
     end
     return newSuckFunc
@@ -516,9 +519,9 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, ignore_com
         end
     end
 
-    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp, count_sucked), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck, count_sucked), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown, count_sucked), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp, count_sucked, amount), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck, count_sucked, amount), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown, count_sucked, amount), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
 
     return self:doDirectionalFunc(dir, { amount }, up, down, f, do_correct, do_turn, retry_sec, ignore_command_flag)
 end

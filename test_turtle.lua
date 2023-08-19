@@ -1,6 +1,7 @@
 require("./libs/turtleplus")
 require("./libs/ccutil")
 require("./libs/movement")
+
 function main(t)
     -- Turn directionality test
     --local dirs = {"north","east","south","west"}
@@ -83,9 +84,10 @@ function main(t)
     --t:turn(MoveDirection.NORTH)
 
 
-
+    t:suck(MoveDirection.DOWN, 64, true, true, 2)
 
     t:finish()
 end
 
 runTurtlePlus(main)
+
