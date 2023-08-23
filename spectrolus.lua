@@ -20,7 +20,7 @@ require("./libs/ccutil")
 -- somewhere between 0.05-0.3 ish for Gaia mana spreader w/o potency lens
 -- somewhere between 0.9-1.5 for elven mana spreader with potency lens
 
-SLEEP_BETWEEN_DROPS = 1.5
+SLEEP_BETWEEN_DROPS = 0
 COLOR_PREFIX = "minecraft:"
 COLOR_SUFFIX = "_wool"
 function formatColor(colr)
