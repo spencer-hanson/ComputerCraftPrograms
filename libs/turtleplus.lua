@@ -982,15 +982,17 @@ end
 
 function TurtlePlus:cube(func, height, width, length, go_down, do_dig)
     do_dig = defaultNil(do_dig, true)
-    for i = 1, height, 1 do
-        self:plane(func, width, length, do_dig)
+    local plane_turn_dir = RelativeTurnDirection.RIGHT
+    for i = 0, height-1, 1 do
+        self:plane(func, width, length, do_dig, plane_turn_dir)
         func(self)
-        if i ~= height then
-            if go_down then
-                self:down(do_dig)
-            else
-                self:up(do_dig)
-            end
+        if go_down then
+            self:down(do_dig)
+        else
+            self:up(do_dig)
+        end
+        if width % 2 == 0 then -- need to tell plane to turn the other way if we have an even width
+            plane_turn_dir = RelativeTurnDirection:opposite(plane_turn_dir)
         end
 
         self:turn(MoveDirection:opposite(self.current_direction))
@@ -1005,9 +1007,9 @@ function TurtlePlus:line(func, length, do_dig)
     end
 end
 
-function TurtlePlus:plane(func, width, length, do_dig)
+function TurtlePlus:plane(func, width, length, do_dig, start_turn_direction)
     do_dig = defaultNil(do_dig, true)
-    local turn_direction = RelativeTurnDirection.RIGHT
+    local turn_direction = defaultNil(start_turn_direction, RelativeTurnDirection.RIGHT)
 
     for i = 1, width, 1 do
         self:line(func, length, do_dig)

@@ -86,7 +86,6 @@ function makeCube(t)
 end
 
 function dig(t)
-    -- TODO Check if inventory is full!
     if not t:hasEmptySlot() then
         local forward = t.current_forward
         local right = t.current_right
@@ -161,6 +160,5 @@ function main(t)
     t:goHome()
     t:finish()
 end
--- TODO Check if inventory is full!
 
 runTurtlePlus(main)

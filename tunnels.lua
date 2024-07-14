@@ -4,8 +4,8 @@ require("./libs/movement")
 
 OUTPUT_CHEST = MoveDirection.SOUTH
 FUEL_CHEST = MoveDirection.UP
-TUNNEL_LENGTH = 64
-NUM_ROWS = 21  -- will be x3 in actualy size, might not want to go too high, if turtle gets out of loaded chunk will terminate program
+TUNNEL_LENGTH = 4
+NUM_ROWS = 4  -- will be x3 in actualy size, might not want to go too high, if turtle gets out of loaded chunk will terminate program
 FIRST_TURN = RelativeTurnDirection.RIGHT
 
 function turnAround(t)
