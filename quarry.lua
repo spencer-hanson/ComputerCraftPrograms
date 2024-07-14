@@ -5,9 +5,9 @@ require("./libs/ccutil")
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 
-CUBE_FORWARD = 2
-CUBE_RIGHT = 2
-CUBE_DOWN = 2
+CUBE_FORWARD = 32
+CUBE_RIGHT = 32
+CUBE_DOWN = 300
 
 
 function dig(t)
@@ -28,6 +28,12 @@ end
 
 function quarry(t)
     print("Starting to quarry!")
+    if not turtle.detectDown() then
+        while not turtle.detectDown() do
+            t:down()
+        end
+    end
+
     t:cube(dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true, true)
     t:goHome(true)
 end
