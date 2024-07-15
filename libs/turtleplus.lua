@@ -13,7 +13,9 @@ TurtlePlus = {
     current_right = 0,
     current_down = 0,
     keep_running = true,
-    listen_to_commands = true -- if false will not listen to commands, on it's way to be shut down
+    listen_to_commands = true, -- if false will not listen to commands, on it's way to be shut down
+    force_going_home = false,  -- if true then going home should ignore things
+    going_home = false -- if giong home NOT forced
 }
 
 function TurtlePlus:new(o)
@@ -28,6 +30,8 @@ function TurtlePlus:new(o)
     o.current_down = 0
     o.keep_running = true
     o.listen_to_commands = true
+    o.force_going_home = false
+    o.going_home = false
     return o
 end
 
@@ -35,8 +39,20 @@ function TurtlePlus_backgroundCoroutine(turtle_plus)
     local done = false
     local key_mapping_to_func = {
         h = turtle_plus.goHomeAndTerminate,
-        f = turtle_plus.goForceGoHomeAndTerminate
+        -- f = turtle_plus.goForceGoHomeAndTerminate
     }
+
+    local function forceHomeChecker()
+        while not done do
+            local event, data = os.pullEvent()
+            if event == "char" then
+                if data == "f" then
+                    turtle_plus.goForceGoHomeAndTerminate()
+                end
+            end
+        end
+    end
+
     local function checkKeyPress()
         while not done do
             local event, data = os.pullEvent()
@@ -66,7 +82,8 @@ function TurtlePlus_backgroundCoroutine(turtle_plus)
     function backgroundFunc()
         parallel.waitForAll(
                 checkKeyPress,
-                bgTest
+                bgTest,
+                forceHomeChecker
         )
     end
 
@@ -117,15 +134,28 @@ end
 
 function turtlePlusCheckListenToCommands(turtle_plus, ignore_command_flag)
     ignore_command_flag = defaultNil(ignore_command_flag, false)
-    if ignore_command_flag then
-        return
-    end
 
-    if not turtle_plus.listen_to_commands then
+    local function stall(show)
         while not turtle_plus.listen_to_commands do
             debugM("Turtle ignoring commands..")
             os.sleep(1)
         end
+    end
+
+    if ignore_command_flag then
+        if turtle_plus.force_going_home then
+	        if type(ignore_command_flag) == "table" and ignore_command_flag["force"] then
+	            return -- we have been told to ignore but we will continue during a forced go home
+	        else
+	            stall() -- force going home overrides our ignore flag
+	        end
+        else
+            return -- not force going home, and we can ignore commands
+        end
+    end
+
+    if not turtle_plus.listen_to_commands then
+        stall() -- not allowed to do commands, no pass from the flag
     end
 end
 
@@ -758,23 +788,33 @@ end
 -- Extra funcs
 
 function TurtlePlus:goForceGoHomeAndTerminate()
-    self:goHomeAndTerminate(true)
+    self:goHomeAndTerminate(true, force_go_home)
 end
 
-function TurtlePlus:goHomeAndTerminate(do_dig)
+function TurtlePlus:goHomeAndTerminate(do_dig, force_go_home)
     do_dig = defaultNil(do_dig, false)
+    force_go_home = defaultNil(force_go_home, false)
+
+    local ignore_cmd_flag = true
+
+    if force_go_home then
+	    self.force_going_home = true
+	    ignore_cmd_flag = {}
+	    ignore_cmd_flag["force"] = true
+    end
 
     self.listen_to_commands = false
     print("Sending terminate..")
     os.sleep(2)
     print("Forcing go home")
-    self:goHome(do_dig, true)
+    self:goHome(do_dig, ignore_cmd_flag)
     error("Turtle forcibly reset by user")
 end
 
-function TurtlePlus:goHome(do_dig, ignore_command_flag)
+function TurtlePlus:goHome(do_dig, ignore_command_flag, ignore_force_flag)
     debugM("Going home")
     do_dig = defaultNil(do_dig, false)
+
     turtlePlusCheckListenToCommands(self, ignore_command_flag)
 
     self:turn(MoveDirection.NORTH, ignore_command_flag)
