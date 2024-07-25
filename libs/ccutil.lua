@@ -1,9 +1,3 @@
-function debugM(msg)
-    if DEBUG_TURTLE then
-        print(msg)
-    end
-end
-
 function unpackM(table1)
     return unpack(table1, 1, table.maxn(table1))
 end

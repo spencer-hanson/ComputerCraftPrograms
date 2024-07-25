@@ -1,5 +1,5 @@
 INVENTORY_SIZE = 16
-DEBUG_TURTLE = true
+DEBUG_TURTLE = false
 
 require("./libs/ccutil")
 require("./libs/movement")
@@ -17,6 +17,14 @@ TurtlePlus = {
     force_going_home = false,  -- if true then going home should ignore things
     fuel_blacklist = {} -- list of items to NOT use as fuel
 }
+
+function printDbg(val)
+    if DEBUG_TURTLE then
+        print("[DEBUG] " ..val)
+        os.sleep(1)
+    end
+end
+
 
 function TurtlePlus:new(o)
     local o = o or {}
@@ -41,13 +49,15 @@ function TurtlePlus_backgroundCoroutine(turtle_plus)
         h = turtle_plus.goHomeAndTerminate,
         -- f = turtle_plus.goForceGoHomeAndTerminate
     }
+    local goHome = turtle_plus.goForceGoHomeAndTerminate
 
     local function forceHomeChecker()
         while not done do
             local event, data = os.pullEvent()
             if event == "char" then
                 if data == "f" then
-                    turtle_plus.goForceGoHomeAndTerminate()
+                    print("Force resetting turtle..")
+                    goHome(turtle_plus)
                 end
             end
         end
@@ -101,7 +111,7 @@ function TurtlePlus:checkFuel()
 
     local level = turtle.getFuelLevel()
     if level < self:numMovesFromHome() + 3 then
-        print("Refueling..")
+        print("Out of fuel! Refueling..")
         self.listen_to_commands = false
         local f = self.current_forward
         local d = self.current_down
@@ -111,18 +121,23 @@ function TurtlePlus:checkFuel()
 
         local cur_sel = turtle.getSelectedSlot()
         while true do
-            self:suck(self.home_fuel_direction, -1, true, true, 5, true)
+            printDbg("Attempting to suck up fuel from " .. self.home_fuel_direction)
+            local suckResult = self:suck(self.home_fuel_direction, -1, true, true, 5, true, true, "out of fuel, nothing found in inventory!")
+            printDbg("Suck returned '" .. suckResult .. "'")
+
             for i = 1, INVENTORY_SIZE, 1 do
                 turtle.select(i)
                 local skip = false
                 -- TODO untested fuel blacklist
                 for _, blacklisted_name in ipairs(self.fuel_blacklist) do
                     if self:getSlotDetails(i).name == blacklisted_name then
+                        printDbg("Found invalid fuel, skipping")
                         skip = true
                         break
                     end
                 end
                 if skip ~= true then
+                    printDbg("Found valid fuel, refueling")
 	                turtle.refuel()
                 end
             end
@@ -146,7 +161,7 @@ function turtlePlusCheckListenToCommands(turtle_plus, do_commands_anyways)
     do_commands_anyways = defaultNil(do_commands_anyways, false)
     local function stall()
         while not turtle_plus.listen_to_commands do
-            debugM("Turtle ignoring commands..")
+            print("Turtle ignoring commands..")
             os.sleep(1)
         end
     end
@@ -195,7 +210,7 @@ function TurtlePlus:turnRelative(turn_rel_dir, do_commands_anyways)
     for i = 1, table.getn(directions), 1 do
         if self.current_direction == directions[i] then
             facing_idx = i
-            --debugM("Found current facing direction idx " .. facing_idx)
+            --print("Found current facing direction idx " .. facing_idx)
             break
         end
     end
@@ -206,12 +221,14 @@ function TurtlePlus:turnRelative(turn_rel_dir, do_commands_anyways)
     elseif facing_idx < 1 then
         facing_idx = 4
     end
-    --debugM("facing_idx " .. facing_idx .. " Now facing " .. directions[facing_idx])
+    --print("facing_idx " .. facing_idx .. " Now facing " .. directions[facing_idx])
     self.current_direction = directions[facing_idx]
 end
 
 function TurtlePlus:turn(turn_dir, do_commands_anyways)
     turtlePlusCheckListenToCommands(self, do_commands_anyways)
+    printDbg("turn(" .. tostring(turn_dir) .. ", " .. tostring(do_commands_anyways) .. ")")
+
     if turn_dir == RelativeTurnDirection.LEFT or turn_dir == RelativeTurnDirection.RIGHT then
         return self:turnRelative(turn_dir, do_commands_anyways)
     end
@@ -251,7 +268,7 @@ function TurtlePlus:turn(turn_dir, do_commands_anyways)
     if cur_dir == turn_dir then
         return
     else
-        --debugM("Turning " .. turn_dir)
+        --print("Turning " .. turn_dir)suck
         local turns = turn_mapping[cur_dir][turn_dir]
         for i = 1, table.getn(turns), 1 do
             if turns[i] == "left" then
@@ -273,13 +290,18 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
 
     turtlePlusCheckListenToCommands(self, do_commands_anyways)
     validateMoveDirection(dir)
+    printDbg("doDirectionalFunc(" .. tostring(dir) .. ", " .. tostring(func_args) .. ", " .. tostring(func_up) .. ", " .. tostring(func_down) .. ", " .. tostring(func).. ", " ..tostring(func).. ", " ..tostring(do_correct).. ", " ..tostring(do_turn)..", " ..tostring(do_commands_anyways) .. ")")
     local previous_direction = self.current_direction
 
     if do_turn then
         if dir ~= MoveDirection.UP and dir ~= MoveDirection.DOWN then
-            self:turn(dir)
+            printDbg("Turning " ..tostring(dir))
+            self:turn(dir, do_commands_anyways)
         end
+    else
+        printDbg("Not Turning")
     end
+
     local resp = nil
     if dir == MoveDirection.UP then
         resp = func_up(unpackM(func_args))
@@ -399,7 +421,7 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     end
 
     local function dropCheckFunc(item_count, ...)
-        --debugM("Checking " .. tostring(item_count) .. " - " .. strlist(arg))
+        --print("Checking " .. tostring(item_count) .. " - " .. strlist(arg))
         if retry_sec <= 0 then
             return true
         end
@@ -450,7 +472,7 @@ function TurtlePlus:suckUntilStuff(direction, specific_blocks, num)
     local total_found = 0
     local found_blocks = self:totalBlocksInInventory(specific_blocks)
     while true do
-        print("Attempting to refill stuff..")
+        print("Attempting to refill stuff " .. direction .. "..")
         self:suckUntilFail(direction)
         found_blocks = self:totalBlocksInInventory(specific_blocks)
         total_found = total_found + found_blocks
@@ -519,19 +541,21 @@ function TurtlePlus:suckRight(amount, do_correct, do_turn, retry_sec)
     return self:suck(MoveDirection:right(self.current_direction), amount, do_correct, do_turn, retry_sec)
 end
 
-function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, do_commands_anyways, count_sucked)
+function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, do_commands_anyways, count_sucked, failure_message)
     do_commands_anyways = defaultNil(do_commands_anyways, false)
-    turtlePlusCheckListenToCommands(self, do_commands_anyways)
-    -- do_correct - correct back to north
-    -- do_turn -  turn back to the original direction
-    -- retry_sec how long to wait between tries (if <= 0 will not retry)
-
     -- if amount == -1 or nil suck all
     dir = defaultNil(dir, MoveDirection.NORTH)
     count_sucked = defaultNil(count_sucked, true)
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
     retry_sec = defaultNil(retry_sec, 0)
+    failure_message = defaultNil(failure_message, "insufficient amount or none, retrying in " .. tostring(retry_sec))
+
+    turtlePlusCheckListenToCommands(self, do_commands_anyways)
+    printDbg("suck(" .. tostring(dir) .. ", " .. tostring(amount) .. ", " .. tostring(do_correct) .. ", " .. tostring(do_turn) .. ", " .. tostring(retry_sec) .. ", " .. tostring(do_commands_anyways) .. ", " .. tostring(count_sucked) .. ")")
+    -- do_correct - correct back to north
+    -- do_turn -  turn back to the original direction
+    -- retry_sec how long to wait between tries (if <= 0 will not retry)
 
     local suck_all = false
     if amount == -1 or amount == nil then
@@ -541,26 +565,31 @@ function TurtlePlus:suck(dir, amount, do_correct, do_turn, retry_sec, do_command
 
     local function suckCheckFunc(item_count, _)
         if retry_sec <= 0 then
+            printDbg("suckCheckFunc -r> True")
             return true
         end
 
         if item_count == false then
+            printDbg("suckCheckFunc -i> False")
             return false
         end
 
-        if suck_all and item_count > 1 then
+        if suck_all and item_count >= 1 then
+            printDbg("suckCheckFunc -i> True")
             return true
         elseif item_count ~= amount then
             print("Suck amount failure, ActualSucked " .. tostring(item_count) .. " != AmountToSuck " .. amount)
+            printDbg("suckCheckFunc -ia> False")
             return false
         else
+            printDbg("suckCheckFunc -ia> True")
             return true
         end
     end
 
-    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp, count_sucked, amount), retry_sec, suckCheckFunc, "SuckUp() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck, count_sucked, amount), retry_sec, suckCheckFunc, "Suck() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
-    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown, count_sucked, amount), retry_sec, suckCheckFunc, "SuckDown() failed, insufficient amount or none, retrying in " .. tostring(retry_sec))
+    local up = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckUp, count_sucked, amount), retry_sec, suckCheckFunc, "SuckUp() failed, " .. failure_message)
+    local f = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suck, count_sucked, amount), retry_sec, suckCheckFunc, "Suck() failed, " .. failure_message)
+    local down = wrapFuncInWaitAndRetryFunc(wrapSuckFunc(self, turtle.suckDown, count_sucked, amount), retry_sec, suckCheckFunc, "SuckDown() " .. failure_message)
 
     return self:doDirectionalFunc(dir, { amount }, up, down, f, do_correct, do_turn, do_commands_anyways)
 end
@@ -596,7 +625,7 @@ function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec, do_comma
     do_correct = defaultNil(do_correct, true)
     do_turn = defaultNil(do_turn, true)
     retry_sec = defaultNil(retry_sec, 0)
-
+    printDbg("dig(" .. tostring(dir) .. ", " .. tostring(tool_side) .. ", " .. tostring(do_correct) .. ", " .. tostring(do_turn) .. ", " .. tostring(retry_sec) .. ", " .. tostring(do_commands_anyways) .. ")")
     local function digCheckFunc(result, ...)
         return true -- todo use detect() to determine if the block in front was broken?
         --return result
@@ -606,7 +635,7 @@ function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec, do_comma
     local up = wrapFuncInWaitAndRetryFunc(turtle.digUp, retry_sec, digCheckFunc, "DigUp() returned false, retrying in " .. tostring(retry_sec))
     local down = wrapFuncInWaitAndRetryFunc(turtle.digDown, retry_sec, digCheckFunc, "DigDown() returned false, retrying in " .. tostring(retry_sec))
 
-    return self:doDirectionalFunc(dir, { tool_side }, up, down, f, do_correct, do_turn, retry_sec)
+    return self:doDirectionalFunc(dir, { tool_side }, up, down, f, do_correct, do_turn, do_commands_anyways)
 end
 
 -- Move() funcs
@@ -641,9 +670,12 @@ function TurtlePlus:moveNum(dir, num)
 end
 
 function TurtlePlus:moveN(dir, do_correct, retry_sec, do_commands_anyways, num_moves, do_dig)
-    old_dir = self.current_direction
-
+    local old_dir = self.current_direction
+    do_correct = defaultNil(do_correct, true)
     num_moves = defaultNil(num_moves, 1)
+    do_commands_anyways = defaultNil(do_commands_anyways, false)
+    printDbg("moveN(" .. tostring(dir) .. ", " .. tostring(do_correct) .. ", " .. tostring(retry_sec) .. ", " .. tostring(do_commands_anyways) .. ", " .. tostring(num_moves) .. ", " .. tostring(do_dig) .. ")")
+
     if num_moves < 0 then
         num_moves = num_moves * -1
         dir = MoveDirection:opposite(dir)
@@ -651,11 +683,13 @@ function TurtlePlus:moveN(dir, do_correct, retry_sec, do_commands_anyways, num_m
             self:turn(dir, do_commands_anyways)
         end
     end
-    do_commands_anyways = defaultNil(do_commands_anyways, false)
+
     for i = 1, num_moves, 1 do
         self:move(dir, false, retry_sec, do_commands_anyways, do_dig)
     end
-    self:turn(old_dir, do_commands_anyways)
+    if do_correct then
+	    self:turn(old_dir, do_commands_anyways)
+    end
 end
 
 function wrapMoveFunc(turtle_plus, move_func, do_commands_anyways)
@@ -676,6 +710,7 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
     validateMoveDirection(dir)
     do_correct = defaultNil(do_correct, true)
     retry_sec = defaultNil(retry_sec, 5)
+    printDbg("move(" .. tostring(dir) .. ", " .. tostring(do_correct) .. ", " .. tostring(retry_sec) .. ", " .. tostring(do_commands_anyways) .. ", " .. tostring(do_dig))
 
     if dir == MoveDirection.UP then
         if do_dig then
@@ -738,19 +773,22 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
     local shifted_idx = order_idxs[dir]
     local new_direction = shifted_order[shifted_idx]
 
-    --debugM("Shifted " .. strlist(shifted_order))
-    --debugM(self.current_direction .. " -" .. shifted_idx .. "> " .. tostring(new_direction))
-    --debugM("Dir " .. dir .. " newdir " .. new_direction)
+    --print("Shifted " .. strlist(shifted_order))
+    --print(self.current_direction .. " -" .. shifted_idx .. "> " .. tostring(new_direction))
+    --print("Dir " .. dir .. " newdir " .. new_direction)
 
     local function wrapCheckDigMove(tp, move_func, dig_direction, should_dig, ignore_cmd_flg)
         local function wrapped()
             local move_success, msg = move_func()
+            printDbg("wrapCheckDigMove '" .. tostring(move_success) .. "' msg '" .. tostring(msg) .."'")
             if move_success then
                 return true, nil
             end
             if should_dig then
+                printDbg("Need to dig to move")
                 tp:dig(dig_direction, nil, nil, nil, 0, ignore_cmd_flg)
             end
+            printDbg("Going to retry movement")
             return wrapMoveFunc(tp, move_func, ignore_cmd_flg)()
         end
         return wrapped
@@ -779,6 +817,7 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
         dig_move_func = wrapCheckDigMove(self, turtle.forward, self.current_direction, do_dig, do_commands_anyways)
         waitAndRetry(dig_move_func, retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     elseif new_direction == MoveDirection.SOUTH then
+        printDbg("Moving south")
         dig_move_func = wrapCheckDigMove(self, turtle.back, MoveDirection:opposite(self.current_direction), do_dig, do_commands_anyways)
         waitAndRetry(dig_move_func, retry_sec, "Moving back failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
     end
@@ -797,7 +836,7 @@ end
 -- Extra funcs
 
 function TurtlePlus:goForceGoHomeAndTerminate()
-    self:goHomeAndTerminate(true, force_go_home)
+    self:goHomeAndTerminate(true, true)
 end
 
 function TurtlePlus:goHomeAndTerminate(do_dig, force_go_home)
@@ -821,23 +860,28 @@ function TurtlePlus:goHomeAndTerminate(do_dig, force_go_home)
 end
 
 function TurtlePlus:goHome(do_dig, do_commands_anyways)
-    debugM("Going home")
+    print("Going home")
     do_dig = defaultNil(do_dig, false)
 
     turtlePlusCheckListenToCommands(self, do_commands_anyways)
 
+    printDbg("Going home UP")
     self:turn(MoveDirection.NORTH, do_commands_anyways)
     self:moveN(MoveDirection.UP, false, nil, do_commands_anyways, self.current_down, do_dig)
 
+    printDbg("Going home LEFT")
     self:turnRelative(RelativeTurnDirection.LEFT, do_commands_anyways)
     self:moveN(self.current_direction, false, nil, do_commands_anyways, self.current_right, do_dig)
 
+    printDbg("Going home RIGHT")
     self:turnRelative(RelativeTurnDirection.RIGHT, do_commands_anyways)
     self:moveN(MoveDirection.SOUTH, false, nil, do_commands_anyways, self.current_forward, do_dig)
 
     self.current_forward = 0
     self.current_right = 0
     self.current_down = 0
+
+    printDbg("Resetting orientation")
     self:turn(MoveDirection.NORTH, do_commands_anyways)
 end
 
@@ -866,7 +910,7 @@ function TurtlePlus:dropOffInventoryAtHome(do_dig)
     cur_dir = self.current_direction
     self:goHome(do_dig)
     self:dropEntireInventory(dir, 5)
-    self:goTo(f, r, d, nil, true)
+    self:goTo(f, r, d, nil, do_dig)
     self:turn(cur_dir)
 end
 
@@ -1078,7 +1122,7 @@ end
 
 -- Helper func to run turtle plus with a coroutine, not needed though
 function runTurtlePlus(main_func, turtle_plus)
-    debugM("Starting turtle..")
+    print("Starting turtle..")
     if turtle_plus == nil then
         turtle_plus = TurtlePlus:new()
     end
@@ -1091,5 +1135,5 @@ function runTurtlePlus(main_func, turtle_plus)
             TurtlePlus_backgroundCoroutine(turtle_plus),
             mainFunc
     )
-    debugM("All routines finished, stopping")
+    print("All routines finished, stopping")
 end

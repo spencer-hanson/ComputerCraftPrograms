@@ -86,18 +86,12 @@ function main(t)
 
     --t:suck(MoveDirection.DOWN, 64, true, true, 2)
     --t:finish()
-l = {}
-for i = 0, 5, 1 do
-    local function afunc()
-        print(i)
+    t:forward()
+    t:left()
+    t:forward()
+    while true do
+	    t:turnLeft()
     end
-    table.insert(l, afunc)
-end
-
-for i = 0, 5, 1 do
-    l[i]()
-end
-
 end
 
 runTurtlePlus(main)
