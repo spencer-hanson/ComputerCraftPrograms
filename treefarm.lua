@@ -71,8 +71,7 @@ function pickupDrops(t)
 end
 
 function main(t)
-    -- t.home_fuel_direction = FUEL_CHEST
-    t.home_fuel_direction = "east"
+    t.home_fuel_direction = FUEL_CHEST
     t.home_drop_direction = OUTPUT_CHEST
     while true do
         clearInventory(t)
