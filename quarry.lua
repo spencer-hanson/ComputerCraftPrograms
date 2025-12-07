@@ -5,8 +5,8 @@ require("./libs/ccutil")
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 
-CUBE_FORWARD = 32
-CUBE_RIGHT = 32
+CUBE_FORWARD = 3
+CUBE_RIGHT = 3
 CUBE_DOWN = 300
 
 
@@ -25,20 +25,26 @@ function dig(t)
     turtle.digDown()
 end
 
-
 function quarry(t)
+
+    local function moveTimedOut()
+        print("Quarry can't move anymore! Going home")
+        t:goHome(true)
+        error("Quarry cannot continue, movement obstructed")
+    end
+
     print("Starting to quarry!")
     if not turtle.detectDown() then
         while not turtle.detectDown() do
             t:down()
         end
     end
-
-    t:cube(dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true, true)
+    t:cube(dig, CUBE_DOWN, CUBE_RIGHT, CUBE_FORWARD, true, true, 3, moveTimedOut, 5)
     t:goHome(true)
 end
 
 function main(t)
+    -- t:moveN(MoveDirection.NORTH, false, nil, nil, 3, true)
     quarry(t)
     t:finish()
 end

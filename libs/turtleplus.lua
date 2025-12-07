@@ -20,6 +20,7 @@ TurtlePlus = {
 
 function printDbg(val)
     if DEBUG_TURTLE then
+        val = defaultNil(val, "nil")
         print("[DEBUG] " ..val)
         os.sleep(1)
     end
@@ -230,12 +231,15 @@ function TurtlePlus:turn(turn_dir, do_commands_anyways)
     printDbg("turn(" .. tostring(turn_dir) .. ", " .. tostring(do_commands_anyways) .. ")")
 
     if turn_dir == RelativeTurnDirection.LEFT or turn_dir == RelativeTurnDirection.RIGHT then
+        printDbg("Turn is relative")
         return self:turnRelative(turn_dir, do_commands_anyways)
     end
 
     if turn_dir == MoveDirection.UP or turn_dir == MoveDirection.DOWN then
+        printDbg("Turn is up or down")
         return
     end
+    printDbg("Turn is absolute")
 
     local turn_mapping = {
         -- current_position -> new position -> list of moves to get there
@@ -266,6 +270,7 @@ function TurtlePlus:turn(turn_dir, do_commands_anyways)
     }
     local cur_dir = self.current_direction
     if cur_dir == turn_dir then
+        printDbg("Turn completed")
         return
     else
         --print("Turning " .. turn_dir)suck
@@ -279,6 +284,7 @@ function TurtlePlus:turn(turn_dir, do_commands_anyways)
         end
     end
     self.current_direction = turn_dir
+    printDbg("Turn completed")
 end
 
 -- Directional funcs
@@ -304,10 +310,13 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
 
     local resp = nil
     if dir == MoveDirection.UP then
+        printDbg("DirectionalFunc Up")
         resp = func_up(unpackM(func_args))
     elseif dir == MoveDirection.DOWN then
+        printDbg("DirectionalFunc down")
         resp = func_down(unpackM(func_args))
     else
+        printDbg("DirectionalFunc other")
         resp = func(unpackM(func_args))
     end
 
@@ -315,6 +324,7 @@ function TurtlePlus:doDirectionalFunc(dir, func_args, func_up, func_down, func, 
         self:turn(previous_direction, do_commands_anyways)
     end
 
+    printDbg("DirectionalFunc Unpacking func response")
     return unpackM(resp)
 end
 
@@ -449,12 +459,21 @@ function TurtlePlus:drop(dir, amount, do_correct, do_turn, retry_sec)
     return self:doDirectionalFunc(dir, { amount }, up, down, f, do_correct, do_turn, retry_sec)
 end
 
-function TurtlePlus:dropEntireInventory(dir, retry_sec)
+function TurtlePlus:dropEntireInventory(dir, retry_sec, check_for_block)
+    -- if check_for_block is true, will not drop inventory until there is a block (like a chest) in front of it
+    -- else it will just shit on the floor
     turtlePlusCheckListenToCommands(self)
     validateMoveDirection(dir)
     retry_sec = defaultNil(retry_sec, 5)
+    check_for_block = defaultNil(check_for_block, true)
     local last_slot = turtle.getSelectedSlot()
-
+    if check_for_block then
+	    while not turtle.detect() do
+	        print("Checking for block before dropping inventory..")
+	        turtlePlusCheckListenToCommands(self)
+	        os.sleep(1)
+	    end
+    end
     self:turn(dir)
     local stuff_slots = self:getNonEmptySlots()
     for i = 1, table.getn(stuff_slots), 1 do
@@ -634,7 +653,7 @@ function TurtlePlus:dig(dir, tool_side, do_correct, do_turn, retry_sec, do_comma
     local f = wrapFuncInWaitAndRetryFunc(turtle.dig, retry_sec, digCheckFunc, "Dig() returned false, retrying in " .. tostring(retry_sec))
     local up = wrapFuncInWaitAndRetryFunc(turtle.digUp, retry_sec, digCheckFunc, "DigUp() returned false, retrying in " .. tostring(retry_sec))
     local down = wrapFuncInWaitAndRetryFunc(turtle.digDown, retry_sec, digCheckFunc, "DigDown() returned false, retrying in " .. tostring(retry_sec))
-
+    printDbg("Digging")
     return self:doDirectionalFunc(dir, { tool_side }, up, down, f, do_correct, do_turn, do_commands_anyways)
 end
 
@@ -701,8 +720,27 @@ function wrapMoveFunc(turtle_plus, move_func, do_commands_anyways)
     return wrappedFunc
 end
 
-function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig)
+function generateMoveCheckFunc(num_tries)
+    -- num_tries to run the movement before returning a timeout
+    current_tries = 0
+    local function moveCheckFunc(result, message)
+        printDbg("checking movement attempt " .. current_tries)
+        if not result then
+            printDbg("fail move, incrementing attempt")
+            current_tries = current_tries + 1
+        end
+        if current_tries > num_tries then
+            printDbg("move timeout")
+            return FUNCTION_TIMEOUT
+        end
+        return result
+    end
+    return moveCheckFunc
+end
+
+function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig, timeout_func, num_retries)
     do_dig = defaultNil(do_dig, false)
+    timeout_func = defaultNil(timeout_func, nil)
     self:checkFuel()
     do_commands_anyways = defaultNil(do_commands_anyways, false)
     turtlePlusCheckListenToCommands(self, do_commands_anyways)
@@ -710,6 +748,8 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
     validateMoveDirection(dir)
     do_correct = defaultNil(do_correct, true)
     retry_sec = defaultNil(retry_sec, 5)
+    num_retries = defaultNil(num_retries, 5)
+
     printDbg("move(" .. tostring(dir) .. ", " .. tostring(do_correct) .. ", " .. tostring(retry_sec) .. ", " .. tostring(do_commands_anyways) .. ", " .. tostring(do_dig))
 
     if dir == MoveDirection.UP then
@@ -717,14 +757,26 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
             self:dig(MoveDirection.UP, nil, nil, nil, 0, do_commands_anyways)
         end
 
-        waitAndRetry(wrapMoveFunc(self, turtle.up, do_commands_anyways), 5, "Moving up failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetryFuncTimeout(
+            wrapMoveFunc(self, turtle.up, do_commands_anyways),
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving up failed! Waiting ".. retry_sec .." seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
         self.current_down = self.current_down - 1
         return
     elseif dir == MoveDirection.DOWN then
         if do_dig then
             self:dig(MoveDirection.DOWN, nil, nil, nil, 0, do_commands_anyways)
         end
-        waitAndRetry(wrapMoveFunc(self, turtle.down, do_commands_anyways), 5, "Moving down failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetryFuncTimeout(
+            wrapMoveFunc(self, turtle.down, do_commands_anyways),
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving down failed! Waiting ".. retry_sec .. " seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
         self.current_down = self.current_down + 1
         return
     end
@@ -797,7 +849,13 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
     if new_direction == MoveDirection.WEST then
         turtle.turnLeft()
         dig_move_func = wrapCheckDigMove(self, turtle.forward, self.current_direction, do_dig, do_commands_anyways)
-        waitAndRetry(dig_move_func, retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetryFuncTimeout(
+            dig_move_func,
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving forward failed! Waiting ".. retry_sec .." seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
         if do_correct then
             turtle.turnRight()
         else
@@ -807,7 +865,13 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
     elseif new_direction == MoveDirection.EAST then
         turtle.turnRight()
         dig_move_func = wrapCheckDigMove(self, turtle.forward, self.current_direction, do_dig, do_commands_anyways)
-        waitAndRetry(dig_move_func, retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetryFuncTimeout(
+            dig_move_func,
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving forward failed! Waiting ".. retry_sec .." seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
         if do_correct then
             turtle.turnLeft()
         else
@@ -815,11 +879,23 @@ function TurtlePlus:move(dir, do_correct, retry_sec, do_commands_anyways, do_dig
         end
     elseif new_direction == MoveDirection.NORTH then
         dig_move_func = wrapCheckDigMove(self, turtle.forward, self.current_direction, do_dig, do_commands_anyways)
-        waitAndRetry(dig_move_func, retry_sec, "Moving forward failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetryFuncTimeout(
+            dig_move_func,
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving forward failed! Waiting ".. retry_sec .." seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
     elseif new_direction == MoveDirection.SOUTH then
         printDbg("Moving south")
         dig_move_func = wrapCheckDigMove(self, turtle.back, MoveDirection:opposite(self.current_direction), do_dig, do_commands_anyways)
-        waitAndRetry(dig_move_func, retry_sec, "Moving back failed! Waiting 5 seconds and retrying.. (press 'h' to go home and terminate)")
+        waitAndRetry(
+            dig_move_func,
+            retry_sec,
+            generateMoveCheckFunc(num_retries),
+            "Moving back failed! Waiting ".. retry_sec .." seconds and retrying.. (press 'h' to go home and terminate)",
+            timeout_func
+        )
     end
 
     if dir == MoveDirection.NORTH then
@@ -1073,16 +1149,17 @@ end
 
 -- Misc building funcs
 
-function TurtlePlus:cube(func, height, width, length, go_down, do_dig)
+function TurtlePlus:cube(func, height, width, length, go_down, do_dig, retry_sec, timeout_func, num_retries)
     do_dig = defaultNil(do_dig, true)
     local plane_turn_dir = RelativeTurnDirection.RIGHT
     for i = 0, height-1, 1 do
-        self:plane(func, width, length, do_dig, plane_turn_dir)
+        printDbg("Calling plane")
+        self:plane(func, width, length, do_dig, plane_turn_dir, retry_sec, timeout_func, num_retries)
         func(self)
         if go_down then
-            self:down(do_dig)
+            self:move(MoveDirection.DOWN, false, retry_sec, nil, do_dig, timeout_func, num_retries)
         else
-            self:up(do_dig)
+            self:move(MoveDirection.UP, false, retry_sec, nil, do_dig, timeout_func, num_retries)
         end
         if width % 2 == 0 then -- need to tell plane to turn the other way if we have an even width
             plane_turn_dir = RelativeTurnDirection:opposite(plane_turn_dir)
@@ -1092,24 +1169,28 @@ function TurtlePlus:cube(func, height, width, length, go_down, do_dig)
     end
 end
 
-function TurtlePlus:line(func, length, do_dig)
+function TurtlePlus:line(func, length, do_dig, retry_sec, timeout_func, num_retries)
     do_dig = defaultNil(do_dig, true)
     for i = 1, length - 1, 1 do
+        printDbg("Calling func in line")
         func(self)
-        self:forward(do_dig)
+        printDbg("Moving in line")
+        self:move(self.current_direction, false, retry_sec, nil, do_dig, timeout_func, num_retries)
     end
+    printDbg("Line completed")
 end
 
-function TurtlePlus:plane(func, width, length, do_dig, start_turn_direction)
+function TurtlePlus:plane(func, width, length, do_dig, start_turn_direction, retry_sec, timeout_func, num_retries)
     do_dig = defaultNil(do_dig, true)
     local turn_direction = defaultNil(start_turn_direction, RelativeTurnDirection.RIGHT)
 
     for i = 1, width, 1 do
-        self:line(func, length, do_dig)
+        printDbg("Calling line")
+        self:line(func, length, do_dig, retry_sec, timeout_func, num_retries)
         if i ~= width then
             self:turnRelative(turn_direction)
             func(self)
-            self:forward(do_dig)
+            self:move(self.current_direction, false, retry_sec, nil, do_dig, timeout_func, num_retries)
             self:turnRelative(turn_direction)
             turn_direction = RelativeTurnDirection:opposite(turn_direction)
         else

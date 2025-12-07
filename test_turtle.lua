@@ -86,12 +86,20 @@ function main(t)
 
     --t:suck(MoveDirection.DOWN, 64, true, true, 2)
     --t:finish()
-    t:forward()
-    t:left()
-    t:forward()
-    while true do
-	    t:turnLeft()
+    --t:forward()
+    --t:left()
+    --t:forward()
+    --while true do
+    --  t:turnLeft()
+    --end
+    DEBUG_TURTLE = true
+    local function timeout_fn()
+        print("timed out")
     end
+    t:move("up", nil, 5, nil, false, timeout_fn, 2)
+    os.sleep(4)
+    t:move("down", nil, 5, nil, false, timeout_fn, 2)
+    print("TEST TURTLE SCRIPT DONE")
 end
 
 runTurtlePlus(main)

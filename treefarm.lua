@@ -6,11 +6,12 @@ require("./libs/ccutil")
 FUEL_CHEST = MoveDirection.WEST
 SAPLINGS_CHEST = MoveDirection.SOUTH
 OUTPUT_CHEST = MoveDirection.DOWN
-TURTLE_SLEEP_TIME = 5
+TURTLE_SLEEP_TIME = 60
 
 SAPLING_NAME = "minecraft:birch_sapling"
- FUEL_NAMES = {"minecraft:charcoal"}
-KEEP_IN_INVENTORY = {"minecraft:charcoal", SAPLING_NAME}
+FUEL_NAMES = {"minecraft:charcoal", "the_vault:wooden_chunk"}
+
+KEEP_IN_INVENTORY = {"minecraft:charcoal", "the_vault:wooden_chunk", SAPLING_NAME}
 
 
 function clearInventory(t)
@@ -34,6 +35,10 @@ function waitForTreeGrowth(t)
     print("Waiting for tree growth..")
     local found_block = false
     while found_block ~= true do
+        if turtle.detect() == false then -- no sapling
+	        print("No sapling detected, replacing..")
+	        getAndPlaceSapling(t)
+        end
         t:up()
 	    if turtle.detect() == true then
 	        found_block = true
