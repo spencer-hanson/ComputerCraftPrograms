@@ -5,8 +5,8 @@ require("./libs/ccutil")
 FUEL_CHEST = MoveDirection.UP
 DROP_CHEST = MoveDirection.SOUTH
 
-CUBE_FORWARD = 3
-CUBE_RIGHT = 3
+CUBE_FORWARD = 12
+CUBE_RIGHT = 12
 CUBE_DOWN = 300
 
 

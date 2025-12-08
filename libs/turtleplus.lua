@@ -467,6 +467,7 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec, check_for_block)
     retry_sec = defaultNil(retry_sec, 5)
     check_for_block = defaultNil(check_for_block, true)
     local last_slot = turtle.getSelectedSlot()
+    self:turn(dir)
     if check_for_block then
 	    while not turtle.detect() do
 	        print("Checking for block before dropping inventory..")
@@ -474,7 +475,6 @@ function TurtlePlus:dropEntireInventory(dir, retry_sec, check_for_block)
 	        os.sleep(1)
 	    end
     end
-    self:turn(dir)
     local stuff_slots = self:getNonEmptySlots()
     for i = 1, table.getn(stuff_slots), 1 do
         turtle.select(stuff_slots[i])
